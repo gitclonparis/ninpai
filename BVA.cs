@@ -22,7 +22,7 @@ using NinjaTrader.Core.FloatingPoint;
 using NinjaTrader.NinjaScript.DrawingTools;
 #endregion
 
-namespace NinjaTrader.NinjaScript.Indicators.Ninpai
+namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
     public class BVA : Indicator
     {
