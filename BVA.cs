@@ -172,8 +172,8 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			double deltaSessionHigh2 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaHigh[2];
 			double deltaSessionHigh3 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaHigh[3];
 			
-			bool isDeltaSessionClose4barUP = deltaSessionClose0 > deltaSessionClose3;
-			bool isDeltaSessionClose4barDOWN = deltaSessionClose0 < deltaSessionClose3;
+			bool isDeltaSessionClose4barUP = deltaSessionClose0 > deltaSessionClose1 && deltaSessionClose1 > deltaSessionClose2 && deltaSessionClose2 > deltaSessionClose3;
+			bool isDeltaSessionClose4barDOWN = deltaSessionClose0 < deltaSessionClose1 && deltaSessionClose1 < deltaSessionClose2 && deltaSessionClose2 < deltaSessionClose3;
 			
 			
 			
