@@ -185,10 +185,10 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			if (
 				(Close[0] > Open[0])
 				&& isAfterBarsSinceReset
-				&& (OKisAboveUpperThreshold || isAboveUpperThreshold)
-				&& (OKisWithinMaxEntryDistance || isWithinMaxEntryDistance)
-				&& (OKisUpperBreakoutCountExceeded || isUpperBreakoutCountExceeded)
-				&& (OKisDeltaSessionClose4barUP || isDeltaSessionClose4barUP)
+				&& (!OKisAboveUpperThreshold || isAboveUpperThreshold)
+				&& (!OKisWithinMaxEntryDistance || isWithinMaxEntryDistance)
+				&& (!OKisUpperBreakoutCountExceeded || isUpperBreakoutCountExceeded)
+				&& (!OKisDeltaSessionClose4barUP || isDeltaSessionClose4barUP)
 				)
             {
                  Draw.ArrowUp(this, "UpArrow" + CurrentBar, true, 0, Low[0] - TickSize, Brushes.Green);
@@ -200,10 +200,10 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			if (
 				(Close[0] < Open[0])
 				&& isAfterBarsSinceReset
-				&& (OKisBelovLowerThreshold || isBelovLowerThreshold)
-				&& (OKisWithinMaxEntryDistanceDown || isWithinMaxEntryDistanceDown)
-				&& (OKisLowerBreakoutCountExceeded || isLowerBreakoutCountExceeded)
-				&& (OKisDeltaSessionClose4barDOWN || isDeltaSessionClose4barDOWN)
+				&& (!OKisBelovLowerThreshold || isBelovLowerThreshold)
+				&& (!OKisWithinMaxEntryDistanceDown || isWithinMaxEntryDistanceDown)
+				&& (!OKisLowerBreakoutCountExceeded || isLowerBreakoutCountExceeded)
+				&& (!OKisDeltaSessionClose4barDOWN || isDeltaSessionClose4barDOWN)
 				)
             {
 				Draw.ArrowDown(this, "DownArrow" + CurrentBar, true, 0, High[0] + TickSize, Brushes.Red);
