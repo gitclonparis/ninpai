@@ -71,12 +71,14 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             }
             else if (State == State.Configure)
             {
+				AddDataSeries(Data.BarsPeriodType.Tick, 1);
                 ResetValues(DateTime.MinValue);
             }
         }
 
         protected override void OnBarUpdate()
         {
+			if (CurrentBars[0] < 20) return;
             DateTime currentBarTime = Time[0];
 
             if (Bars.IsFirstBarOfSession)
@@ -86,6 +88,13 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             else if (lastResetTime != DateTime.MinValue && (currentBarTime - lastResetTime).TotalMinutes >= ResetPeriod)
             {
                 ResetValues(currentBarTime);
+            }
+			
+			if (BarsInProgress == 1)
+            {
+                OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).Update(OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).BarsArray[1].Count - 1, 1);
+				OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).Update(OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).BarsArray[1].Count - 1, 1);
+                return;
             }
 
             double typicalPrice = (High[0] + Low[0] + Close[0]) / 3;
@@ -125,13 +134,61 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			bool isAfterBarsSinceReset = barsSinceReset > MinBarsForSignal;
 			
 			// ####################
+			// Delta Condition
+			double deltaBarClose0 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaClose[0];
+			double deltaBarClose1 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaClose[1];
+			double deltaBarClose2 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaClose[2];
+			double deltaBarClose3 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaClose[3];
+			double deltaBarOpen0 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaOpen[0];
+			double deltaBarOpen1 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaOpen[1];
+			double deltaBarOpen2 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaOpen[2];
+			double deltaBarOpen3 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaOpen[3];
+			
+			double deltaBarLow0 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaLow[0];
+			double deltaBarLow1 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaLow[1];
+			double deltaBarLow2 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaLow[2];
+			double deltaBarLow3 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaLow[3];
+			double deltaBarHigh0 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaHigh[0];
+			double deltaBarHigh1 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaHigh[1];
+			double deltaBarHigh2 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaHigh[2];
+			double deltaBarHigh3 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Bar, 0).DeltaHigh[3];
+			
+			// ###############
+			double deltaSessionClose0 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaClose[0];
+			double deltaSessionClose1 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaClose[1];
+			double deltaSessionClose2 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaClose[2];
+			double deltaSessionClose3 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaClose[3];
+			double deltaSessionOpen0 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaOpen[0];
+			double deltaSessionOpen1 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaOpen[1];
+			double deltaSessionOpen2 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaOpen[2];
+			double deltaSessionOpen3 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaOpen[3];
+			
+			double deltaSessionLow0 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaLow[0];
+			double deltaSessionLow1 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaLow[1];
+			double deltaSessionLow2 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaLow[2];
+			double deltaSessionLow3 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaLow[3];
+			double deltaSessionHigh0 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaHigh[0];
+			double deltaSessionHigh1 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaHigh[1];
+			double deltaSessionHigh2 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaHigh[2];
+			double deltaSessionHigh3 = OrderFlowCumulativeDelta(BarsArray[0], CumulativeDeltaType.BidAsk, CumulativeDeltaPeriod.Session, 0).DeltaHigh[3];
+			
+			bool isDeltaSessionClose4barUP = deltaSessionClose0 > deltaSessionClose3;
+			bool isDeltaSessionClose4barDOWN = deltaSessionClose0 < deltaSessionClose3;
+			
+			
+			
+			// ####################
+			// Data Condition
+			
+			// ####################
 			// Buy Condition
 			if (
 				(Close[0] > Open[0])
-				&& isAboveUpperThreshold
-				&& (isWithinMaxEntryDistance)
-				&& (isUpperBreakoutCountExceeded)
 				&& isAfterBarsSinceReset
+				&& (OKisAboveUpperThreshold || isAboveUpperThreshold)
+				&& (OKisWithinMaxEntryDistance || isWithinMaxEntryDistance)
+				&& (OKisUpperBreakoutCountExceeded || isUpperBreakoutCountExceeded)
+				&& (OKisDeltaSessionClose4barUP || isDeltaSessionClose4barUP)
 				)
             {
                  Draw.ArrowUp(this, "UpArrow" + CurrentBar, true, 0, Low[0] - TickSize, Brushes.Green);
@@ -142,10 +199,11 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			// Sell Condition
 			if (
 				(Close[0] < Open[0])
-				&& isBelovLowerThreshold
-				&& (isWithinMaxEntryDistanceDown)
-				&& (isLowerBreakoutCountExceeded)
 				&& isAfterBarsSinceReset
+				&& (OKisBelovLowerThreshold || isBelovLowerThreshold)
+				&& (OKisWithinMaxEntryDistanceDown || isWithinMaxEntryDistanceDown)
+				&& (OKisLowerBreakoutCountExceeded || isLowerBreakoutCountExceeded)
+				&& (OKisDeltaSessionClose4barDOWN || isDeltaSessionClose4barDOWN)
 				)
             {
 				Draw.ArrowDown(this, "DownArrow" + CurrentBar, true, 0, High[0] + TickSize, Brushes.Red);
@@ -166,7 +224,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 
         #region Properties
 
-         [NinjaScriptProperty]
+        [NinjaScriptProperty]
         [Range(1, int.MaxValue)]
         [Display(Name = "Reset Period (Minutes)", Order = 1, GroupName = "Parameters")]
         public int ResetPeriod { get; set; }
@@ -211,8 +269,46 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         [Display(Name = "Max Lower Breakouts", Order = 3, GroupName = "Sell")]
         public int MaxLowerBreakouts { get; set; }
 		
-
-
+		// #################################
+		
+		/// ########## 3.Buy_Setup ########################
+		[Range(0, 1), NinjaScriptProperty]
+		[Display(Name="OKisAboveUpperThreshold", Description="OKisAboveUpperThreshold", Order=1, GroupName="3.Buy_Setup")]
+		public bool OKisAboveUpperThreshold { get; set; }
+		
+		[Range(0, 1), NinjaScriptProperty]
+		[Display(Name="OKisWithinMaxEntryDistance", Description="OKisWithinMaxEntryDistance", Order=2, GroupName="3.Buy_Setup")]
+		public bool OKisWithinMaxEntryDistance { get; set; }
+		
+		[Range(0, 1), NinjaScriptProperty]
+		[Display(Name="OKisUpperBreakoutCountExceeded", Description="OKisUpperBreakoutCountExceeded", Order=3, GroupName="3.Buy_Setup")]
+		public bool OKisUpperBreakoutCountExceeded { get; set; }
+		
+		[Range(0, 1), NinjaScriptProperty]
+		[Display(Name="OKisDeltaSessionClose4barUP", Description="OKisDeltaSessionClose4barUP", Order=4, GroupName="3.Buy_Setup")]
+		public bool OKisDeltaSessionClose4barUP { get; set; }
+		
+		
+		
+		// ##########  4.Sel_Setup  ########################
+		[Range(0, 1), NinjaScriptProperty]
+		[Display(Name="OKisBelovLowerThreshold", Description="OKisBelovLowerThreshold", Order=1, GroupName="4.Sel_Setup")]
+		public bool OKisBelovLowerThreshold { get; set; }
+		
+		[Range(0, 1), NinjaScriptProperty]
+		[Display(Name="OKisWithinMaxEntryDistanceDown", Description="OKisWithinMaxEntryDistanceDown", Order=2, GroupName="4.Sel_Setup")]
+		public bool OKisWithinMaxEntryDistanceDown { get; set; }
+		
+		[Range(0, 1), NinjaScriptProperty]
+		[Display(Name="OKisLowerBreakoutCountExceeded", Description="OKisLowerBreakoutCountExceeded", Order=3, GroupName="4.Sel_Setup")]
+		public bool OKisLowerBreakoutCountExceeded { get; set; }
+		
+		[Range(0, 1), NinjaScriptProperty]
+		[Display(Name="OKisDeltaSessionClose4barDOWN", Description="OKisDeltaSessionClose4barDOWN", Order=4, GroupName="4.Sel_Setup")]
+		public bool OKisDeltaSessionClose4barDOWN { get; set; }
+		
+		
+		// ##################################
         [Browsable(false)]
         [XmlIgnore]
         public Series<double> VWAP
@@ -273,18 +369,18 @@ namespace NinjaTrader.NinjaScript.Indicators
 	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
 	{
 		private ninpai.BVA[] cacheBVA;
-		public ninpai.BVA BVA(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts)
+		public ninpai.BVA BVA(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, bool oKisDeltaSessionClose4barUP, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool oKisDeltaSessionClose4barDOWN)
 		{
-			return BVA(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts);
+			return BVA(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, oKisDeltaSessionClose4barUP, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, oKisDeltaSessionClose4barDOWN);
 		}
 
-		public ninpai.BVA BVA(ISeries<double> input, int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts)
+		public ninpai.BVA BVA(ISeries<double> input, int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, bool oKisDeltaSessionClose4barUP, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool oKisDeltaSessionClose4barDOWN)
 		{
 			if (cacheBVA != null)
 				for (int idx = 0; idx < cacheBVA.Length; idx++)
-					if (cacheBVA[idx] != null && cacheBVA[idx].ResetPeriod == resetPeriod && cacheBVA[idx].MinBarsForSignal == minBarsForSignal && cacheBVA[idx].MinEntryDistanceUP == minEntryDistanceUP && cacheBVA[idx].MaxEntryDistanceUP == maxEntryDistanceUP && cacheBVA[idx].MaxUpperBreakouts == maxUpperBreakouts && cacheBVA[idx].MinEntryDistanceDOWN == minEntryDistanceDOWN && cacheBVA[idx].MaxEntryDistanceDOWN == maxEntryDistanceDOWN && cacheBVA[idx].MaxLowerBreakouts == maxLowerBreakouts && cacheBVA[idx].EqualsInput(input))
+					if (cacheBVA[idx] != null && cacheBVA[idx].ResetPeriod == resetPeriod && cacheBVA[idx].MinBarsForSignal == minBarsForSignal && cacheBVA[idx].MinEntryDistanceUP == minEntryDistanceUP && cacheBVA[idx].MaxEntryDistanceUP == maxEntryDistanceUP && cacheBVA[idx].MaxUpperBreakouts == maxUpperBreakouts && cacheBVA[idx].MinEntryDistanceDOWN == minEntryDistanceDOWN && cacheBVA[idx].MaxEntryDistanceDOWN == maxEntryDistanceDOWN && cacheBVA[idx].MaxLowerBreakouts == maxLowerBreakouts && cacheBVA[idx].OKisAboveUpperThreshold == oKisAboveUpperThreshold && cacheBVA[idx].OKisWithinMaxEntryDistance == oKisWithinMaxEntryDistance && cacheBVA[idx].OKisUpperBreakoutCountExceeded == oKisUpperBreakoutCountExceeded && cacheBVA[idx].OKisDeltaSessionClose4barUP == oKisDeltaSessionClose4barUP && cacheBVA[idx].OKisBelovLowerThreshold == oKisBelovLowerThreshold && cacheBVA[idx].OKisWithinMaxEntryDistanceDown == oKisWithinMaxEntryDistanceDown && cacheBVA[idx].OKisLowerBreakoutCountExceeded == oKisLowerBreakoutCountExceeded && cacheBVA[idx].OKisDeltaSessionClose4barDOWN == oKisDeltaSessionClose4barDOWN && cacheBVA[idx].EqualsInput(input))
 						return cacheBVA[idx];
-			return CacheIndicator<ninpai.BVA>(new ninpai.BVA(){ ResetPeriod = resetPeriod, MinBarsForSignal = minBarsForSignal, MinEntryDistanceUP = minEntryDistanceUP, MaxEntryDistanceUP = maxEntryDistanceUP, MaxUpperBreakouts = maxUpperBreakouts, MinEntryDistanceDOWN = minEntryDistanceDOWN, MaxEntryDistanceDOWN = maxEntryDistanceDOWN, MaxLowerBreakouts = maxLowerBreakouts }, input, ref cacheBVA);
+			return CacheIndicator<ninpai.BVA>(new ninpai.BVA(){ ResetPeriod = resetPeriod, MinBarsForSignal = minBarsForSignal, MinEntryDistanceUP = minEntryDistanceUP, MaxEntryDistanceUP = maxEntryDistanceUP, MaxUpperBreakouts = maxUpperBreakouts, MinEntryDistanceDOWN = minEntryDistanceDOWN, MaxEntryDistanceDOWN = maxEntryDistanceDOWN, MaxLowerBreakouts = maxLowerBreakouts, OKisAboveUpperThreshold = oKisAboveUpperThreshold, OKisWithinMaxEntryDistance = oKisWithinMaxEntryDistance, OKisUpperBreakoutCountExceeded = oKisUpperBreakoutCountExceeded, OKisDeltaSessionClose4barUP = oKisDeltaSessionClose4barUP, OKisBelovLowerThreshold = oKisBelovLowerThreshold, OKisWithinMaxEntryDistanceDown = oKisWithinMaxEntryDistanceDown, OKisLowerBreakoutCountExceeded = oKisLowerBreakoutCountExceeded, OKisDeltaSessionClose4barDOWN = oKisDeltaSessionClose4barDOWN }, input, ref cacheBVA);
 		}
 	}
 }
@@ -293,14 +389,14 @@ namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
 	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
 	{
-		public Indicators.ninpai.BVA BVA(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts)
+		public Indicators.ninpai.BVA BVA(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, bool oKisDeltaSessionClose4barUP, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool oKisDeltaSessionClose4barDOWN)
 		{
-			return indicator.BVA(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts);
+			return indicator.BVA(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, oKisDeltaSessionClose4barUP, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, oKisDeltaSessionClose4barDOWN);
 		}
 
-		public Indicators.ninpai.BVA BVA(ISeries<double> input , int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts)
+		public Indicators.ninpai.BVA BVA(ISeries<double> input , int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, bool oKisDeltaSessionClose4barUP, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool oKisDeltaSessionClose4barDOWN)
 		{
-			return indicator.BVA(input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts);
+			return indicator.BVA(input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, oKisDeltaSessionClose4barUP, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, oKisDeltaSessionClose4barDOWN);
 		}
 	}
 }
@@ -309,14 +405,14 @@ namespace NinjaTrader.NinjaScript.Strategies
 {
 	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
 	{
-		public Indicators.ninpai.BVA BVA(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts)
+		public Indicators.ninpai.BVA BVA(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, bool oKisDeltaSessionClose4barUP, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool oKisDeltaSessionClose4barDOWN)
 		{
-			return indicator.BVA(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts);
+			return indicator.BVA(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, oKisDeltaSessionClose4barUP, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, oKisDeltaSessionClose4barDOWN);
 		}
 
-		public Indicators.ninpai.BVA BVA(ISeries<double> input , int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts)
+		public Indicators.ninpai.BVA BVA(ISeries<double> input , int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, bool oKisDeltaSessionClose4barUP, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool oKisDeltaSessionClose4barDOWN)
 		{
-			return indicator.BVA(input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts);
+			return indicator.BVA(input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, oKisDeltaSessionClose4barUP, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, oKisDeltaSessionClose4barDOWN);
 		}
 	}
 }
