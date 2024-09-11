@@ -203,6 +203,8 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         [Display(Name = "Min Bars for Signal", Order = 2, GroupName = "Parameters")]
         public int MinBarsForSignal { get; set; }
 		
+		// ############ Buy #############
+		// Buy
 		[NinjaScriptProperty]
 		[Range(1, int.MaxValue)]
 		[Display(Name = "Min Entry Distance UP", Order = 1, GroupName = "Buy")]
@@ -217,61 +219,6 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		[Range(1, int.MaxValue)]
 		[Display(Name = "Max Upper Breakouts", Order = 3, GroupName = "Buy")]
 		public int MaxUpperBreakouts { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(1, int.MaxValue)]
-		[Display(Name = "Min Entry Distance DOWN", Order = 1, GroupName = "Sell")]
-		public int MinEntryDistanceDOWN { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(1, int.MaxValue)]
-		[Display(Name = "Max Entry Distance DOWN", Order = 2, GroupName = "Sell")]
-		public int MaxEntryDistanceDOWN { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(1, int.MaxValue)]
-		[Display(Name = "Max Lower Breakouts", Order = 3, GroupName = "Sell")]
-		public int MaxLowerBreakouts { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(0, double.MaxValue)]
-		[Display(Name = "Fmin ADX", Order = 1, GroupName = "ADX")]
-		public double FminADX { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(0, double.MaxValue)]
-		[Display(Name = "Fmax ADX", Order = 2, GroupName = "ADX")]
-		public double FmaxADX { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(0, double.MaxValue)]
-		[Display(Name = "Fmin ATR", Order = 1, GroupName = "ATR")]
-		public double FminATR { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(0, double.MaxValue)]
-		[Display(Name = "Fmax ATR", Order = 2, GroupName = "ATR")]
-		public double FmaxATR { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(0, int.MaxValue)]
-		[Display(Name = "Fperiod Vol", Order = 1, GroupName = "Volume")]
-		public int FperiodVol { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(0, 1)]
-		[Display(Name = "OKisADX", Description = "Check ADX", Order = 1, GroupName = "ADX")]
-		public bool OKisADX { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(0, 1)]
-		[Display(Name = "OKisATR", Description = "Check ATR", Order = 1, GroupName = "ATR")]
-		public bool OKisATR { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(0, 1)]
-		[Display(Name = "OKisVOL", Description = "Check Volume", Order = 1, GroupName = "Volume")]
-		public bool OKisVOL { get; set; }
 		
 		[NinjaScriptProperty]
 		[Range(0, 1)]
@@ -293,6 +240,23 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		[Display(Name = "OKisUpperBreakoutCountExceeded", Description = "Check Upper Breakout Count Exceeded", Order = 1, GroupName = "Buy")]
 		public bool OKisUpperBreakoutCountExceeded { get; set; }
 		
+		// ############ Sell #############
+		// Sell
+		[NinjaScriptProperty]
+		[Range(1, int.MaxValue)]
+		[Display(Name = "Min Entry Distance DOWN", Order = 1, GroupName = "Sell")]
+		public int MinEntryDistanceDOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(1, int.MaxValue)]
+		[Display(Name = "Max Entry Distance DOWN", Order = 2, GroupName = "Sell")]
+		public int MaxEntryDistanceDOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(1, int.MaxValue)]
+		[Display(Name = "Max Lower Breakouts", Order = 3, GroupName = "Sell")]
+		public int MaxLowerBreakouts { get; set; }
+		
 		[NinjaScriptProperty]
 		[Range(0, 1)]
 		[Display(Name = "OKisAfterBarsSinceResetDown", Description = "Check Bars Since Reset Down", Order = 1, GroupName = "Sell")]
@@ -312,6 +276,52 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		[Range(0, 1)]
 		[Display(Name = "OKisLowerBreakoutCountExceeded", Description = "Check Lower Breakout Count Exceeded", Order = 1, GroupName = "Sell")]
 		public bool OKisLowerBreakoutCountExceeded { get; set; }
+		
+		// ############ ADX #############
+		// ADX
+		[NinjaScriptProperty]
+		[Range(0, double.MaxValue)]
+		[Display(Name = "Fmin ADX", Order = 1, GroupName = "ADX")]
+		public double FminADX { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, double.MaxValue)]
+		[Display(Name = "Fmax ADX", Order = 2, GroupName = "ADX")]
+		public double FmaxADX { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 1)]
+		[Display(Name = "OKisADX", Description = "Check ADX", Order = 1, GroupName = "ADX")]
+		public bool OKisADX { get; set; }
+		
+		// ############ ATR #############
+		// ATR
+		[NinjaScriptProperty]
+		[Range(0, double.MaxValue)]
+		[Display(Name = "Fmin ATR", Order = 1, GroupName = "ATR")]
+		public double FminATR { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, double.MaxValue)]
+		[Display(Name = "Fmax ATR", Order = 2, GroupName = "ATR")]
+		public double FmaxATR { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 1)]
+		[Display(Name = "OKisATR", Description = "Check ATR", Order = 1, GroupName = "ATR")]
+		public bool OKisATR { get; set; }
+		
+		// ############ Volume #############
+		// Volume
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name = "Fperiod Vol", Order = 1, GroupName = "Volume")]
+		public int FperiodVol { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 1)]
+		[Display(Name = "OKisVOL", Description = "Check Volume", Order = 1, GroupName = "Volume")]
+		public bool OKisVOL { get; set; }
 
         // Additional Properties for Buy/Sell conditions...
 
