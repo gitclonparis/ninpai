@@ -215,9 +215,9 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			// Buy Condition
 			if (
 				(Close[0] > Open[0])
-				&& (!OKisADX || isADX)
-				&& (!OKisATR || isATR)
-				&& (!OKisVOL || isVOL)
+				&& (!OKisADX || ADX1[0] > FminADX && ADX1[0] < FmaxADX)
+				&& (!OKisATR || ATR1[0] > FminATR && ATR1[0] < FmaxATR)
+				&& (!OKisVOL || VOL1[0] > VOLMA1[0])
 				&& !OKisAfterBarsSinceResetUP || isAfterBarsSinceReset
 				&& (!OKisAboveUpperThreshold || isAboveUpperThreshold)
 				&& (!OKisWithinMaxEntryDistance || isWithinMaxEntryDistance)
@@ -233,9 +233,9 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			// Sell Condition
 			if (
 				(Close[0] < Open[0])
-				&& (!OKisADX || isADX)
-				&& (!OKisATR || isATR)
-				&& (!OKisVOL || isVOL)
+				&& (!OKisADX || ADX1[0] > FminADX && ADX1[0] < FmaxADX)
+				&& (!OKisATR || ATR1[0] > FminATR && ATR1[0] < FmaxATR)
+				&& (!OKisVOL || VOL1[0] > VOLMA1[0])
 				&& !OKisAfterBarsSinceResetDown || isAfterBarsSinceReset
 				&& (!OKisBelovLowerThreshold || isBelovLowerThreshold)
 				&& (!OKisWithinMaxEntryDistanceDown || isWithinMaxEntryDistanceDown)
