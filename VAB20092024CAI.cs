@@ -23,7 +23,7 @@ using NinjaTrader.NinjaScript.DrawingTools;
 
 namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
-    public class BVALimusineIndicatorLastCai : Indicator
+    public class VAB20092024CAI : Indicator
     {
         private double sumPriceVolume;
         private double sumVolume;
@@ -43,7 +43,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             if (State == State.SetDefaults)
             {
                 Description = @"Indicateur BVA-Limusine combiné";
-                Name = "BVALimusineIndicatorLastCai";
+                Name = "VAB20092024CAI";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
@@ -76,6 +76,11 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 ShowLimusineOpenCloseDOWN = true;
                 ShowLimusineHighLowUP = true;
                 ShowLimusineHighLowDOWN = true;
+				
+				// New parameters for slope filter
+				EnableSlopeFilter = true;
+				SlopeFilterPercentage = 10;
+				SlopeFilterPeriod = 5;
 
                 AddPlot(Brushes.Orange, "VWAP");
                 AddPlot(Brushes.Red, "StdDev1Upper");
@@ -208,7 +213,10 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             bool limusineCondition = (ShowLimusineOpenCloseUP && openCloseDiff >= MinimumTicks && Close[0] > Open[0]) ||
                                      (ShowLimusineHighLowUP && highLowDiff >= MinimumTicks && Close[0] > Open[0]);
 
-            return bvaCondition && limusineCondition;
+            // New slope condition
+			bool slopeCondition = !EnableSlopeFilter || CalculateSlope(Values[5], SlopeFilterPeriod) >= SlopeFilterPercentage;
+			return bvaCondition && limusineCondition && slopeCondition;
+			// return bvaCondition && limusineCondition;
         }
 
         private bool ShouldDrawDownArrow()
@@ -227,8 +235,35 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             bool limusineCondition = (ShowLimusineOpenCloseDOWN && openCloseDiff >= MinimumTicks && Close[0] < Open[0]) ||
                                      (ShowLimusineHighLowDOWN && highLowDiff >= MinimumTicks && Close[0] < Open[0]);
 
-            return bvaCondition && limusineCondition;
+            // New slope condition
+			bool slopeCondition = !EnableSlopeFilter || CalculateSlope(Values[6], SlopeFilterPeriod) <= -SlopeFilterPercentage;
+			return bvaCondition && limusineCondition && slopeCondition;
+			// return bvaCondition && limusineCondition;
         }
+		
+		private double CalculateSlope(ISeries<double> series, int period)
+		{
+			if (CurrentBar < period) return 0;
+	
+			double sumX = 0;
+			double sumY = 0;
+			double sumXY = 0;
+			double sumX2 = 0;
+	
+			for (int i = 0; i < period; i++)
+			{
+				double x = i;
+				double y = series[i];
+	
+				sumX += x;
+				sumY += y;
+				sumXY += x * y;
+				sumX2 += x * x;
+			}
+	
+			double slope = (period * sumXY - sumX * sumY) / (period * sumX2 - sumX * sumX);
+			return slope * 100; // Convert to percentage
+		}
 
         private void ResetValues(DateTime resetTime)
         {
@@ -400,7 +435,21 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         [Display(Name = "Afficher Limusine High-Low DOWN", Description = "Afficher les limusines High-Low DOWN", Order = 5, GroupName = "Limusine Parameters")]
         public bool ShowLimusineHighLowDOWN { get; set; }
 
-        // ... (autres propriétés)
+         [NinjaScriptProperty]
+		[Display(Name = "Enable Slope Filter", Description = "Enable or disable the slope filter", Order = 1, GroupName = "Slope Filter")]
+		public bool EnableSlopeFilter { get; set; }
+	
+		[NinjaScriptProperty]
+		[Range(1, 100)]
+		[Display(Name = "Slope Filter Percentage", Description = "Minimum slope percentage for filter", Order = 2, GroupName = "Slope Filter")]
+		public double SlopeFilterPercentage { get; set; }
+	
+		[NinjaScriptProperty]
+		[Range(2, 20)]
+		[Display(Name = "Slope Filter Period", Description = "Number of bars to calculate slope", Order = 3, GroupName = "Slope Filter")]
+		public int SlopeFilterPeriod { get; set; }
+		
+		// ... (autres propriétés)
 
         [Browsable(false)]
         [XmlIgnore]
@@ -423,19 +472,19 @@ namespace NinjaTrader.NinjaScript.Indicators
 {
 	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
 	{
-		private ninpai.BVALimusineIndicatorLastCai[] cacheBVALimusineIndicatorLastCai;
-		public ninpai.BVALimusineIndicatorLastCai BVALimusineIndicatorLastCai(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN)
+		private ninpai.VAB20092024CAI[] cacheVAB20092024CAI;
+		public ninpai.VAB20092024CAI VAB20092024CAI(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, bool enableSlopeFilter, double slopeFilterPercentage, int slopeFilterPeriod)
 		{
-			return BVALimusineIndicatorLastCai(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, fminADX, fmaxADX, oKisADX, fminATR, fmaxATR, oKisATR, fperiodVol, oKisVOL, minimumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN);
+			return VAB20092024CAI(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, fminADX, fmaxADX, oKisADX, fminATR, fmaxATR, oKisATR, fperiodVol, oKisVOL, minimumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, enableSlopeFilter, slopeFilterPercentage, slopeFilterPeriod);
 		}
 
-		public ninpai.BVALimusineIndicatorLastCai BVALimusineIndicatorLastCai(ISeries<double> input, int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN)
+		public ninpai.VAB20092024CAI VAB20092024CAI(ISeries<double> input, int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, bool enableSlopeFilter, double slopeFilterPercentage, int slopeFilterPeriod)
 		{
-			if (cacheBVALimusineIndicatorLastCai != null)
-				for (int idx = 0; idx < cacheBVALimusineIndicatorLastCai.Length; idx++)
-					if (cacheBVALimusineIndicatorLastCai[idx] != null && cacheBVALimusineIndicatorLastCai[idx].ResetPeriod == resetPeriod && cacheBVALimusineIndicatorLastCai[idx].MinBarsForSignal == minBarsForSignal && cacheBVALimusineIndicatorLastCai[idx].MinEntryDistanceUP == minEntryDistanceUP && cacheBVALimusineIndicatorLastCai[idx].MaxEntryDistanceUP == maxEntryDistanceUP && cacheBVALimusineIndicatorLastCai[idx].MaxUpperBreakouts == maxUpperBreakouts && cacheBVALimusineIndicatorLastCai[idx].OKisAfterBarsSinceResetUP == oKisAfterBarsSinceResetUP && cacheBVALimusineIndicatorLastCai[idx].OKisAboveUpperThreshold == oKisAboveUpperThreshold && cacheBVALimusineIndicatorLastCai[idx].OKisWithinMaxEntryDistance == oKisWithinMaxEntryDistance && cacheBVALimusineIndicatorLastCai[idx].OKisUpperBreakoutCountExceeded == oKisUpperBreakoutCountExceeded && cacheBVALimusineIndicatorLastCai[idx].MinEntryDistanceDOWN == minEntryDistanceDOWN && cacheBVALimusineIndicatorLastCai[idx].MaxEntryDistanceDOWN == maxEntryDistanceDOWN && cacheBVALimusineIndicatorLastCai[idx].MaxLowerBreakouts == maxLowerBreakouts && cacheBVALimusineIndicatorLastCai[idx].OKisAfterBarsSinceResetDown == oKisAfterBarsSinceResetDown && cacheBVALimusineIndicatorLastCai[idx].OKisBelovLowerThreshold == oKisBelovLowerThreshold && cacheBVALimusineIndicatorLastCai[idx].OKisWithinMaxEntryDistanceDown == oKisWithinMaxEntryDistanceDown && cacheBVALimusineIndicatorLastCai[idx].OKisLowerBreakoutCountExceeded == oKisLowerBreakoutCountExceeded && cacheBVALimusineIndicatorLastCai[idx].FminADX == fminADX && cacheBVALimusineIndicatorLastCai[idx].FmaxADX == fmaxADX && cacheBVALimusineIndicatorLastCai[idx].OKisADX == oKisADX && cacheBVALimusineIndicatorLastCai[idx].FminATR == fminATR && cacheBVALimusineIndicatorLastCai[idx].FmaxATR == fmaxATR && cacheBVALimusineIndicatorLastCai[idx].OKisATR == oKisATR && cacheBVALimusineIndicatorLastCai[idx].FperiodVol == fperiodVol && cacheBVALimusineIndicatorLastCai[idx].OKisVOL == oKisVOL && cacheBVALimusineIndicatorLastCai[idx].MinimumTicks == minimumTicks && cacheBVALimusineIndicatorLastCai[idx].ShowLimusineOpenCloseUP == showLimusineOpenCloseUP && cacheBVALimusineIndicatorLastCai[idx].ShowLimusineOpenCloseDOWN == showLimusineOpenCloseDOWN && cacheBVALimusineIndicatorLastCai[idx].ShowLimusineHighLowUP == showLimusineHighLowUP && cacheBVALimusineIndicatorLastCai[idx].ShowLimusineHighLowDOWN == showLimusineHighLowDOWN && cacheBVALimusineIndicatorLastCai[idx].EqualsInput(input))
-						return cacheBVALimusineIndicatorLastCai[idx];
-			return CacheIndicator<ninpai.BVALimusineIndicatorLastCai>(new ninpai.BVALimusineIndicatorLastCai(){ ResetPeriod = resetPeriod, MinBarsForSignal = minBarsForSignal, MinEntryDistanceUP = minEntryDistanceUP, MaxEntryDistanceUP = maxEntryDistanceUP, MaxUpperBreakouts = maxUpperBreakouts, OKisAfterBarsSinceResetUP = oKisAfterBarsSinceResetUP, OKisAboveUpperThreshold = oKisAboveUpperThreshold, OKisWithinMaxEntryDistance = oKisWithinMaxEntryDistance, OKisUpperBreakoutCountExceeded = oKisUpperBreakoutCountExceeded, MinEntryDistanceDOWN = minEntryDistanceDOWN, MaxEntryDistanceDOWN = maxEntryDistanceDOWN, MaxLowerBreakouts = maxLowerBreakouts, OKisAfterBarsSinceResetDown = oKisAfterBarsSinceResetDown, OKisBelovLowerThreshold = oKisBelovLowerThreshold, OKisWithinMaxEntryDistanceDown = oKisWithinMaxEntryDistanceDown, OKisLowerBreakoutCountExceeded = oKisLowerBreakoutCountExceeded, FminADX = fminADX, FmaxADX = fmaxADX, OKisADX = oKisADX, FminATR = fminATR, FmaxATR = fmaxATR, OKisATR = oKisATR, FperiodVol = fperiodVol, OKisVOL = oKisVOL, MinimumTicks = minimumTicks, ShowLimusineOpenCloseUP = showLimusineOpenCloseUP, ShowLimusineOpenCloseDOWN = showLimusineOpenCloseDOWN, ShowLimusineHighLowUP = showLimusineHighLowUP, ShowLimusineHighLowDOWN = showLimusineHighLowDOWN }, input, ref cacheBVALimusineIndicatorLastCai);
+			if (cacheVAB20092024CAI != null)
+				for (int idx = 0; idx < cacheVAB20092024CAI.Length; idx++)
+					if (cacheVAB20092024CAI[idx] != null && cacheVAB20092024CAI[idx].ResetPeriod == resetPeriod && cacheVAB20092024CAI[idx].MinBarsForSignal == minBarsForSignal && cacheVAB20092024CAI[idx].MinEntryDistanceUP == minEntryDistanceUP && cacheVAB20092024CAI[idx].MaxEntryDistanceUP == maxEntryDistanceUP && cacheVAB20092024CAI[idx].MaxUpperBreakouts == maxUpperBreakouts && cacheVAB20092024CAI[idx].OKisAfterBarsSinceResetUP == oKisAfterBarsSinceResetUP && cacheVAB20092024CAI[idx].OKisAboveUpperThreshold == oKisAboveUpperThreshold && cacheVAB20092024CAI[idx].OKisWithinMaxEntryDistance == oKisWithinMaxEntryDistance && cacheVAB20092024CAI[idx].OKisUpperBreakoutCountExceeded == oKisUpperBreakoutCountExceeded && cacheVAB20092024CAI[idx].MinEntryDistanceDOWN == minEntryDistanceDOWN && cacheVAB20092024CAI[idx].MaxEntryDistanceDOWN == maxEntryDistanceDOWN && cacheVAB20092024CAI[idx].MaxLowerBreakouts == maxLowerBreakouts && cacheVAB20092024CAI[idx].OKisAfterBarsSinceResetDown == oKisAfterBarsSinceResetDown && cacheVAB20092024CAI[idx].OKisBelovLowerThreshold == oKisBelovLowerThreshold && cacheVAB20092024CAI[idx].OKisWithinMaxEntryDistanceDown == oKisWithinMaxEntryDistanceDown && cacheVAB20092024CAI[idx].OKisLowerBreakoutCountExceeded == oKisLowerBreakoutCountExceeded && cacheVAB20092024CAI[idx].FminADX == fminADX && cacheVAB20092024CAI[idx].FmaxADX == fmaxADX && cacheVAB20092024CAI[idx].OKisADX == oKisADX && cacheVAB20092024CAI[idx].FminATR == fminATR && cacheVAB20092024CAI[idx].FmaxATR == fmaxATR && cacheVAB20092024CAI[idx].OKisATR == oKisATR && cacheVAB20092024CAI[idx].FperiodVol == fperiodVol && cacheVAB20092024CAI[idx].OKisVOL == oKisVOL && cacheVAB20092024CAI[idx].MinimumTicks == minimumTicks && cacheVAB20092024CAI[idx].ShowLimusineOpenCloseUP == showLimusineOpenCloseUP && cacheVAB20092024CAI[idx].ShowLimusineOpenCloseDOWN == showLimusineOpenCloseDOWN && cacheVAB20092024CAI[idx].ShowLimusineHighLowUP == showLimusineHighLowUP && cacheVAB20092024CAI[idx].ShowLimusineHighLowDOWN == showLimusineHighLowDOWN && cacheVAB20092024CAI[idx].EnableSlopeFilter == enableSlopeFilter && cacheVAB20092024CAI[idx].SlopeFilterPercentage == slopeFilterPercentage && cacheVAB20092024CAI[idx].SlopeFilterPeriod == slopeFilterPeriod && cacheVAB20092024CAI[idx].EqualsInput(input))
+						return cacheVAB20092024CAI[idx];
+			return CacheIndicator<ninpai.VAB20092024CAI>(new ninpai.VAB20092024CAI(){ ResetPeriod = resetPeriod, MinBarsForSignal = minBarsForSignal, MinEntryDistanceUP = minEntryDistanceUP, MaxEntryDistanceUP = maxEntryDistanceUP, MaxUpperBreakouts = maxUpperBreakouts, OKisAfterBarsSinceResetUP = oKisAfterBarsSinceResetUP, OKisAboveUpperThreshold = oKisAboveUpperThreshold, OKisWithinMaxEntryDistance = oKisWithinMaxEntryDistance, OKisUpperBreakoutCountExceeded = oKisUpperBreakoutCountExceeded, MinEntryDistanceDOWN = minEntryDistanceDOWN, MaxEntryDistanceDOWN = maxEntryDistanceDOWN, MaxLowerBreakouts = maxLowerBreakouts, OKisAfterBarsSinceResetDown = oKisAfterBarsSinceResetDown, OKisBelovLowerThreshold = oKisBelovLowerThreshold, OKisWithinMaxEntryDistanceDown = oKisWithinMaxEntryDistanceDown, OKisLowerBreakoutCountExceeded = oKisLowerBreakoutCountExceeded, FminADX = fminADX, FmaxADX = fmaxADX, OKisADX = oKisADX, FminATR = fminATR, FmaxATR = fmaxATR, OKisATR = oKisATR, FperiodVol = fperiodVol, OKisVOL = oKisVOL, MinimumTicks = minimumTicks, ShowLimusineOpenCloseUP = showLimusineOpenCloseUP, ShowLimusineOpenCloseDOWN = showLimusineOpenCloseDOWN, ShowLimusineHighLowUP = showLimusineHighLowUP, ShowLimusineHighLowDOWN = showLimusineHighLowDOWN, EnableSlopeFilter = enableSlopeFilter, SlopeFilterPercentage = slopeFilterPercentage, SlopeFilterPeriod = slopeFilterPeriod }, input, ref cacheVAB20092024CAI);
 		}
 	}
 }
@@ -444,14 +493,14 @@ namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
 	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
 	{
-		public Indicators.ninpai.BVALimusineIndicatorLastCai BVALimusineIndicatorLastCai(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN)
+		public Indicators.ninpai.VAB20092024CAI VAB20092024CAI(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, bool enableSlopeFilter, double slopeFilterPercentage, int slopeFilterPeriod)
 		{
-			return indicator.BVALimusineIndicatorLastCai(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, fminADX, fmaxADX, oKisADX, fminATR, fmaxATR, oKisATR, fperiodVol, oKisVOL, minimumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN);
+			return indicator.VAB20092024CAI(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, fminADX, fmaxADX, oKisADX, fminATR, fmaxATR, oKisATR, fperiodVol, oKisVOL, minimumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, enableSlopeFilter, slopeFilterPercentage, slopeFilterPeriod);
 		}
 
-		public Indicators.ninpai.BVALimusineIndicatorLastCai BVALimusineIndicatorLastCai(ISeries<double> input , int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN)
+		public Indicators.ninpai.VAB20092024CAI VAB20092024CAI(ISeries<double> input , int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, bool enableSlopeFilter, double slopeFilterPercentage, int slopeFilterPeriod)
 		{
-			return indicator.BVALimusineIndicatorLastCai(input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, fminADX, fmaxADX, oKisADX, fminATR, fmaxATR, oKisATR, fperiodVol, oKisVOL, minimumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN);
+			return indicator.VAB20092024CAI(input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, fminADX, fmaxADX, oKisADX, fminATR, fmaxATR, oKisATR, fperiodVol, oKisVOL, minimumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, enableSlopeFilter, slopeFilterPercentage, slopeFilterPeriod);
 		}
 	}
 }
@@ -460,14 +509,14 @@ namespace NinjaTrader.NinjaScript.Strategies
 {
 	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
 	{
-		public Indicators.ninpai.BVALimusineIndicatorLastCai BVALimusineIndicatorLastCai(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN)
+		public Indicators.ninpai.VAB20092024CAI VAB20092024CAI(int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, bool enableSlopeFilter, double slopeFilterPercentage, int slopeFilterPeriod)
 		{
-			return indicator.BVALimusineIndicatorLastCai(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, fminADX, fmaxADX, oKisADX, fminATR, fmaxATR, oKisATR, fperiodVol, oKisVOL, minimumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN);
+			return indicator.VAB20092024CAI(Input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, fminADX, fmaxADX, oKisADX, fminATR, fmaxATR, oKisATR, fperiodVol, oKisVOL, minimumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, enableSlopeFilter, slopeFilterPercentage, slopeFilterPeriod);
 		}
 
-		public Indicators.ninpai.BVALimusineIndicatorLastCai BVALimusineIndicatorLastCai(ISeries<double> input , int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN)
+		public Indicators.ninpai.VAB20092024CAI VAB20092024CAI(ISeries<double> input , int resetPeriod, int minBarsForSignal, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, double fminADX, double fmaxADX, bool oKisADX, double fminATR, double fmaxATR, bool oKisATR, int fperiodVol, bool oKisVOL, int minimumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, bool enableSlopeFilter, double slopeFilterPercentage, int slopeFilterPeriod)
 		{
-			return indicator.BVALimusineIndicatorLastCai(input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, fminADX, fmaxADX, oKisADX, fminATR, fmaxATR, oKisATR, fperiodVol, oKisVOL, minimumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN);
+			return indicator.VAB20092024CAI(input, resetPeriod, minBarsForSignal, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, fminADX, fmaxADX, oKisADX, fminATR, fmaxATR, oKisATR, fperiodVol, oKisVOL, minimumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, enableSlopeFilter, slopeFilterPercentage, slopeFilterPeriod);
 		}
 	}
 }
