@@ -30,64 +30,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         private Brush downArrowColor;
         #endregion
 
-        #region Properties
-        // Paramètres pour la flèche UP
-        [NinjaScriptProperty]
-        [Display(Name = "Activer la condition UP", Order = 1, GroupName = "0.01_Paramètres UP")]
-        public bool UpBarDeltaEnabled { get; set; }
-
-        [NinjaScriptProperty]
-        [Display(Name = "Seuil  supérieur UP (BarDelta)", Order = 2, GroupName = "0.01_Paramètres UP")]
-        public double MinBarDeltaUPThreshold { get; set; }
-
-        [NinjaScriptProperty]
-        [Display(Name = "Seuil inférieur UP (BarDelta)", Order = 3, GroupName = "0.01_Paramètres UP")]
-        public double MaxBarDeltaUPThreshold { get; set; }
-
-        // Paramètres pour la flèche DOWN
-        [NinjaScriptProperty]
-        [Display(Name = "Activer la condition DOWN", Order = 1, GroupName = "0.02_Paramètres DOWN")]
-        public bool DownBarDeltaEnabled { get; set; }
-
-        [NinjaScriptProperty]
-        [Display(Name = "Seuil  supérieur DOWN (BarDelta)", Order = 2, GroupName = "0.02_Paramètres DOWN")]
-        public double MinBarDeltaDownThreshold { get; set; }
-
-        [NinjaScriptProperty]
-        [Display(Name = "Seuil inférieur DOWN (BarDelta)", Order = 3, GroupName = "0.02_Paramètres DOWN")]
-        public double MaxBarDeltaDownThreshold { get; set; }
-
-        // Couleurs des flèches
-        [XmlIgnore]
-        [Display(Name = "Couleur flèche UP", Order = 1, GroupName = "Couleurs")]
-        public Brush UpArrowColor
-        {
-            get { return upArrowColor; }
-            set { upArrowColor = value; }
-        }
-
-        [Browsable(false)]
-        public string UpArrowColorSerializable
-        {
-            get { return Serialize.BrushToString(upArrowColor); }
-            set { upArrowColor = Serialize.StringToBrush(value); }
-        }
-
-        [XmlIgnore]
-        [Display(Name = "Couleur flèche DOWN", Order = 2, GroupName = "Couleurs")]
-        public Brush DownArrowColor
-        {
-            get { return downArrowColor; }
-            set { downArrowColor = value; }
-        }
-
-        [Browsable(false)]
-        public string DownArrowColorSerializable
-        {
-            get { return Serialize.BrushToString(downArrowColor); }
-            set { downArrowColor = Serialize.StringToBrush(value); }
-        }
-        #endregion
+        
 
         protected override void OnStateChange()
         {
@@ -150,6 +93,65 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 }
             }
         }
+		
+		#region Properties
+        // Paramètres pour la flèche UP
+        [NinjaScriptProperty]
+        [Display(Name = "Activer la condition UP", Order = 1, GroupName = "0.01_Paramètres UP")]
+        public bool UpBarDeltaEnabled { get; set; }
+
+        [NinjaScriptProperty]
+        [Display(Name = "Seuil  supérieur UP (BarDelta)", Order = 2, GroupName = "0.01_Paramètres UP")]
+        public double MinBarDeltaUPThreshold { get; set; }
+
+        [NinjaScriptProperty]
+        [Display(Name = "Seuil inférieur UP (BarDelta)", Order = 3, GroupName = "0.01_Paramètres UP")]
+        public double MaxBarDeltaUPThreshold { get; set; }
+
+        // Paramètres pour la flèche DOWN
+        [NinjaScriptProperty]
+        [Display(Name = "Activer la condition DOWN", Order = 1, GroupName = "0.02_Paramètres DOWN")]
+        public bool DownBarDeltaEnabled { get; set; }
+
+        [NinjaScriptProperty]
+        [Display(Name = "Seuil  supérieur DOWN (BarDelta)", Order = 2, GroupName = "0.02_Paramètres DOWN")]
+        public double MinBarDeltaDownThreshold { get; set; }
+
+        [NinjaScriptProperty]
+        [Display(Name = "Seuil inférieur DOWN (BarDelta)", Order = 3, GroupName = "0.02_Paramètres DOWN")]
+        public double MaxBarDeltaDownThreshold { get; set; }
+
+        // Couleurs des flèches
+        [XmlIgnore]
+        [Display(Name = "Couleur flèche UP", Order = 1, GroupName = "Couleurs")]
+        public Brush UpArrowColor
+        {
+            get { return upArrowColor; }
+            set { upArrowColor = value; }
+        }
+
+        [Browsable(false)]
+        public string UpArrowColorSerializable
+        {
+            get { return Serialize.BrushToString(upArrowColor); }
+            set { upArrowColor = Serialize.StringToBrush(value); }
+        }
+
+        [XmlIgnore]
+        [Display(Name = "Couleur flèche DOWN", Order = 2, GroupName = "Couleurs")]
+        public Brush DownArrowColor
+        {
+            get { return downArrowColor; }
+            set { downArrowColor = value; }
+        }
+
+        [Browsable(false)]
+        public string DownArrowColorSerializable
+        {
+            get { return Serialize.BrushToString(downArrowColor); }
+            set { downArrowColor = Serialize.StringToBrush(value); }
+        }
+        #endregion
     }
 }
 
