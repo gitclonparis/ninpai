@@ -59,12 +59,12 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		public int MaxNegativeDeltaDown { get; set; }
 	
 		[NinjaScriptProperty]
-		[Range(0, int.MaxValue)]
+		[Range(int.MinValue, int.MaxValue)]
 		[Display(Name="Min Positive Delta Down", Order=7, GroupName="Parameters")]
 		public int MinPositiveDeltaDown { get; set; }
 	
 		[NinjaScriptProperty]
-		[Range(0, int.MaxValue)]
+		[Range(int.MinValue, int.MaxValue)]
 		[Display(Name="Max Positive Delta Down", Order=8, GroupName="Parameters")]
 		public int MaxPositiveDeltaDown { get; set; }
 	
@@ -95,7 +95,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				MinPositiveDeltaUp = 200;
 				MaxPositiveDeltaUp = 3000;
 				MinNegativeDeltaUp = -20;
-				MaxNegativeDeltaUp = 20;
+				MaxNegativeDeltaUp = 0;
 				MinNegativeDeltaDown = -3000;
 				MaxNegativeDeltaDown = -200;
 				MinPositiveDeltaDown = -20;
