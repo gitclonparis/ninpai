@@ -51,6 +51,24 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         [Display(Name = "Enable Previous Session Range Breakout", Description = "Enable checking for breakouts of the previous session's StdDev1 range", Order = 1, GroupName = "0.01_Parameters")]
         public bool EnablePreviousSessionRangeBreakout { get; set; }
 
+        [NinjaScriptProperty]
+        [Display(Name = "Use Limusine Average", Description = "Enable average bar size comparison", Order = 7, GroupName = "0.2_Limusine Parameters")]
+        public bool UseLimMoyenne { get; set; }
+
+        [NinjaScriptProperty]
+        [Range(0.1, 10.0)]
+        [Display(Name = "Average Multiplier", Description = "Multiplier for average comparison (1.5 = 1.5 times the average)", Order = 8, GroupName = "0.2_Limusine Parameters")]
+        public double LimMoyenneMultiplier { get; set; }
+
+        [NinjaScriptProperty]
+        [Range(5, 50)]
+        [Display(Name = "Average Bars Range", Description = "Number of bars to calculate the average", Order = 9, GroupName = "0.2_Limusine Parameters")]
+        public int LimMoyenneRange { get; set; }
+
+        [NinjaScriptProperty]
+        [Display(Name = "Use High-Low for Average", Description = "If false, uses Open-Close for average calculation", Order = 10, GroupName = "0.2_Limusine Parameters")]
+        public bool LimMoyenneUseHighLow { get; set; }
+
         protected override void OnStateChange()
         {
             if (State == State.SetDefaults)
@@ -93,6 +111,11 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 
                 EnableSTD3HighLowTracking = false;
                 EnablePreviousSessionRangeBreakout = false;
+
+                UseLimMoyenne = false;
+                LimMoyenneMultiplier = 1.5;
+                LimMoyenneRange = 15;
+                LimMoyenneUseHighLow = true;
 
                 AddPlot(Brushes.Orange, "VWAP");
                 AddPlot(Brushes.Red, "StdDev1Upper");
@@ -236,14 +259,35 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 
             double openCloseDiff = Math.Abs(Open[0] - Close[0]) / TickSize;
             double highLowDiff = Math.Abs(High[0] - Low[0]) / TickSize;
+            
             bool limusineCondition = (ShowLimusineOpenCloseUP && openCloseDiff >= MinimumTicks && openCloseDiff <= MaximumTicks && Close[0] > Open[0]) ||
                                     (ShowLimusineHighLowUP && highLowDiff >= MinimumTicks && highLowDiff <= MaximumTicks && Close[0] > Open[0]);
+
+            bool limMoyenneCondition = true;
+            if (UseLimMoyenne && CurrentBar >= LimMoyenneRange)
+            {
+                double avgBarSize = 0;
+                for (int i = 1; i <= LimMoyenneRange; i++)
+                {
+                    if (LimMoyenneUseHighLow)
+                        avgBarSize += Math.Abs(High[i] - Low[i]) / TickSize;
+                    else
+                        avgBarSize += Math.Abs(Open[i] - Close[i]) / TickSize;
+                }
+                avgBarSize /= LimMoyenneRange;
+                
+                double currentBarSize = LimMoyenneUseHighLow ? 
+                    Math.Abs(High[0] - Low[0]) / TickSize : 
+                    Math.Abs(Open[0] - Close[0]) / TickSize;
+                    
+                limMoyenneCondition = currentBarSize >= (avgBarSize * LimMoyenneMultiplier);
+            }
 
             bool std3Condition = !EnableSTD3HighLowTracking || Values[5][0] >= highestSTD3Upper;
             bool rangeBreakoutCondition = !EnablePreviousSessionRangeBreakout || 
                 (previousSessionHighStd1Upper != double.MinValue && Close[0] > previousSessionHighStd1Upper);
             
-            return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
+            return bvaCondition && limusineCondition && limMoyenneCondition && std3Condition && rangeBreakoutCondition;
         }
 
         private bool ShouldDrawDownArrow()
@@ -261,14 +305,35 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 
             double openCloseDiff = Math.Abs(Open[0] - Close[0]) / TickSize;
             double highLowDiff = Math.Abs(High[0] - Low[0]) / TickSize;
+            
             bool limusineCondition = (ShowLimusineOpenCloseDOWN && openCloseDiff >= MinimumTicks && openCloseDiff <= MaximumTicks && Close[0] < Open[0]) ||
                                     (ShowLimusineHighLowDOWN && highLowDiff >= MinimumTicks && highLowDiff <= MaximumTicks && Close[0] < Open[0]);
+
+            bool limMoyenneCondition = true;
+            if (UseLimMoyenne && CurrentBar >= LimMoyenneRange)
+            {
+                double avgBarSize = 0;
+                for (int i = 1; i <= LimMoyenneRange; i++)
+                {
+                    if (LimMoyenneUseHighLow)
+                        avgBarSize += Math.Abs(High[i] - Low[i]) / TickSize;
+                    else
+                        avgBarSize += Math.Abs(Open[i] - Close[i]) / TickSize;
+                }
+                avgBarSize /= LimMoyenneRange;
+                
+                double currentBarSize = LimMoyenneUseHighLow ? 
+                    Math.Abs(High[0] - Low[0]) / TickSize : 
+                    Math.Abs(Open[0] - Close[0]) / TickSize;
+                    
+                limMoyenneCondition = currentBarSize >= (avgBarSize * LimMoyenneMultiplier);
+            }
 
             bool std3Condition = !EnableSTD3HighLowTracking || Values[6][0] <= lowestSTD3Lower;
             bool rangeBreakoutCondition = !EnablePreviousSessionRangeBreakout || 
                 (previousSessionLowStd1Lower != double.MaxValue && Close[0] < previousSessionLowStd1Lower);
             
-            return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
+            return bvaCondition && limusineCondition && limMoyenneCondition && std3Condition && rangeBreakoutCondition;
         }
         
         private void ResetSessionValues()
@@ -466,18 +531,18 @@ namespace NinjaTrader.NinjaScript.Indicators
 	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
 	{
 		private ninpai.Vwap4vaB[] cacheVwap4vaB;
-		public ninpai.Vwap4vaB Vwap4vaB(bool enablePreviousSessionRangeBreakout, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
+		public ninpai.Vwap4vaB Vwap4vaB(bool enablePreviousSessionRangeBreakout, bool useLimMoyenne, double limMoyenneMultiplier, int limMoyenneRange, bool limMoyenneUseHighLow, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
 		{
-			return Vwap4vaB(Input, enablePreviousSessionRangeBreakout, resetPeriod, minBarsForSignal, minimumTicks, maximumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, enableDistanceFromVWAPCondition, minDistanceFromVWAP, maxDistanceFromVWAP, enableSTD3HighLowTracking, fperiodVol, oKisVOL);
+			return Vwap4vaB(Input, enablePreviousSessionRangeBreakout, useLimMoyenne, limMoyenneMultiplier, limMoyenneRange, limMoyenneUseHighLow, resetPeriod, minBarsForSignal, minimumTicks, maximumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, enableDistanceFromVWAPCondition, minDistanceFromVWAP, maxDistanceFromVWAP, enableSTD3HighLowTracking, fperiodVol, oKisVOL);
 		}
 
-		public ninpai.Vwap4vaB Vwap4vaB(ISeries<double> input, bool enablePreviousSessionRangeBreakout, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
+		public ninpai.Vwap4vaB Vwap4vaB(ISeries<double> input, bool enablePreviousSessionRangeBreakout, bool useLimMoyenne, double limMoyenneMultiplier, int limMoyenneRange, bool limMoyenneUseHighLow, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
 		{
 			if (cacheVwap4vaB != null)
 				for (int idx = 0; idx < cacheVwap4vaB.Length; idx++)
-					if (cacheVwap4vaB[idx] != null && cacheVwap4vaB[idx].EnablePreviousSessionRangeBreakout == enablePreviousSessionRangeBreakout && cacheVwap4vaB[idx].ResetPeriod == resetPeriod && cacheVwap4vaB[idx].MinBarsForSignal == minBarsForSignal && cacheVwap4vaB[idx].MinimumTicks == minimumTicks && cacheVwap4vaB[idx].MaximumTicks == maximumTicks && cacheVwap4vaB[idx].ShowLimusineOpenCloseUP == showLimusineOpenCloseUP && cacheVwap4vaB[idx].ShowLimusineOpenCloseDOWN == showLimusineOpenCloseDOWN && cacheVwap4vaB[idx].ShowLimusineHighLowUP == showLimusineHighLowUP && cacheVwap4vaB[idx].ShowLimusineHighLowDOWN == showLimusineHighLowDOWN && cacheVwap4vaB[idx].MinEntryDistanceUP == minEntryDistanceUP && cacheVwap4vaB[idx].MaxEntryDistanceUP == maxEntryDistanceUP && cacheVwap4vaB[idx].MaxUpperBreakouts == maxUpperBreakouts && cacheVwap4vaB[idx].OKisAfterBarsSinceResetUP == oKisAfterBarsSinceResetUP && cacheVwap4vaB[idx].OKisAboveUpperThreshold == oKisAboveUpperThreshold && cacheVwap4vaB[idx].OKisWithinMaxEntryDistance == oKisWithinMaxEntryDistance && cacheVwap4vaB[idx].OKisUpperBreakoutCountExceeded == oKisUpperBreakoutCountExceeded && cacheVwap4vaB[idx].MinEntryDistanceDOWN == minEntryDistanceDOWN && cacheVwap4vaB[idx].MaxEntryDistanceDOWN == maxEntryDistanceDOWN && cacheVwap4vaB[idx].MaxLowerBreakouts == maxLowerBreakouts && cacheVwap4vaB[idx].OKisAfterBarsSinceResetDown == oKisAfterBarsSinceResetDown && cacheVwap4vaB[idx].OKisBelovLowerThreshold == oKisBelovLowerThreshold && cacheVwap4vaB[idx].OKisWithinMaxEntryDistanceDown == oKisWithinMaxEntryDistanceDown && cacheVwap4vaB[idx].OKisLowerBreakoutCountExceeded == oKisLowerBreakoutCountExceeded && cacheVwap4vaB[idx].EnableDistanceFromVWAPCondition == enableDistanceFromVWAPCondition && cacheVwap4vaB[idx].MinDistanceFromVWAP == minDistanceFromVWAP && cacheVwap4vaB[idx].MaxDistanceFromVWAP == maxDistanceFromVWAP && cacheVwap4vaB[idx].EnableSTD3HighLowTracking == enableSTD3HighLowTracking && cacheVwap4vaB[idx].FperiodVol == fperiodVol && cacheVwap4vaB[idx].OKisVOL == oKisVOL && cacheVwap4vaB[idx].EqualsInput(input))
+					if (cacheVwap4vaB[idx] != null && cacheVwap4vaB[idx].EnablePreviousSessionRangeBreakout == enablePreviousSessionRangeBreakout && cacheVwap4vaB[idx].UseLimMoyenne == useLimMoyenne && cacheVwap4vaB[idx].LimMoyenneMultiplier == limMoyenneMultiplier && cacheVwap4vaB[idx].LimMoyenneRange == limMoyenneRange && cacheVwap4vaB[idx].LimMoyenneUseHighLow == limMoyenneUseHighLow && cacheVwap4vaB[idx].ResetPeriod == resetPeriod && cacheVwap4vaB[idx].MinBarsForSignal == minBarsForSignal && cacheVwap4vaB[idx].MinimumTicks == minimumTicks && cacheVwap4vaB[idx].MaximumTicks == maximumTicks && cacheVwap4vaB[idx].ShowLimusineOpenCloseUP == showLimusineOpenCloseUP && cacheVwap4vaB[idx].ShowLimusineOpenCloseDOWN == showLimusineOpenCloseDOWN && cacheVwap4vaB[idx].ShowLimusineHighLowUP == showLimusineHighLowUP && cacheVwap4vaB[idx].ShowLimusineHighLowDOWN == showLimusineHighLowDOWN && cacheVwap4vaB[idx].MinEntryDistanceUP == minEntryDistanceUP && cacheVwap4vaB[idx].MaxEntryDistanceUP == maxEntryDistanceUP && cacheVwap4vaB[idx].MaxUpperBreakouts == maxUpperBreakouts && cacheVwap4vaB[idx].OKisAfterBarsSinceResetUP == oKisAfterBarsSinceResetUP && cacheVwap4vaB[idx].OKisAboveUpperThreshold == oKisAboveUpperThreshold && cacheVwap4vaB[idx].OKisWithinMaxEntryDistance == oKisWithinMaxEntryDistance && cacheVwap4vaB[idx].OKisUpperBreakoutCountExceeded == oKisUpperBreakoutCountExceeded && cacheVwap4vaB[idx].MinEntryDistanceDOWN == minEntryDistanceDOWN && cacheVwap4vaB[idx].MaxEntryDistanceDOWN == maxEntryDistanceDOWN && cacheVwap4vaB[idx].MaxLowerBreakouts == maxLowerBreakouts && cacheVwap4vaB[idx].OKisAfterBarsSinceResetDown == oKisAfterBarsSinceResetDown && cacheVwap4vaB[idx].OKisBelovLowerThreshold == oKisBelovLowerThreshold && cacheVwap4vaB[idx].OKisWithinMaxEntryDistanceDown == oKisWithinMaxEntryDistanceDown && cacheVwap4vaB[idx].OKisLowerBreakoutCountExceeded == oKisLowerBreakoutCountExceeded && cacheVwap4vaB[idx].EnableDistanceFromVWAPCondition == enableDistanceFromVWAPCondition && cacheVwap4vaB[idx].MinDistanceFromVWAP == minDistanceFromVWAP && cacheVwap4vaB[idx].MaxDistanceFromVWAP == maxDistanceFromVWAP && cacheVwap4vaB[idx].EnableSTD3HighLowTracking == enableSTD3HighLowTracking && cacheVwap4vaB[idx].FperiodVol == fperiodVol && cacheVwap4vaB[idx].OKisVOL == oKisVOL && cacheVwap4vaB[idx].EqualsInput(input))
 						return cacheVwap4vaB[idx];
-			return CacheIndicator<ninpai.Vwap4vaB>(new ninpai.Vwap4vaB(){ EnablePreviousSessionRangeBreakout = enablePreviousSessionRangeBreakout, ResetPeriod = resetPeriod, MinBarsForSignal = minBarsForSignal, MinimumTicks = minimumTicks, MaximumTicks = maximumTicks, ShowLimusineOpenCloseUP = showLimusineOpenCloseUP, ShowLimusineOpenCloseDOWN = showLimusineOpenCloseDOWN, ShowLimusineHighLowUP = showLimusineHighLowUP, ShowLimusineHighLowDOWN = showLimusineHighLowDOWN, MinEntryDistanceUP = minEntryDistanceUP, MaxEntryDistanceUP = maxEntryDistanceUP, MaxUpperBreakouts = maxUpperBreakouts, OKisAfterBarsSinceResetUP = oKisAfterBarsSinceResetUP, OKisAboveUpperThreshold = oKisAboveUpperThreshold, OKisWithinMaxEntryDistance = oKisWithinMaxEntryDistance, OKisUpperBreakoutCountExceeded = oKisUpperBreakoutCountExceeded, MinEntryDistanceDOWN = minEntryDistanceDOWN, MaxEntryDistanceDOWN = maxEntryDistanceDOWN, MaxLowerBreakouts = maxLowerBreakouts, OKisAfterBarsSinceResetDown = oKisAfterBarsSinceResetDown, OKisBelovLowerThreshold = oKisBelovLowerThreshold, OKisWithinMaxEntryDistanceDown = oKisWithinMaxEntryDistanceDown, OKisLowerBreakoutCountExceeded = oKisLowerBreakoutCountExceeded, EnableDistanceFromVWAPCondition = enableDistanceFromVWAPCondition, MinDistanceFromVWAP = minDistanceFromVWAP, MaxDistanceFromVWAP = maxDistanceFromVWAP, EnableSTD3HighLowTracking = enableSTD3HighLowTracking, FperiodVol = fperiodVol, OKisVOL = oKisVOL }, input, ref cacheVwap4vaB);
+			return CacheIndicator<ninpai.Vwap4vaB>(new ninpai.Vwap4vaB(){ EnablePreviousSessionRangeBreakout = enablePreviousSessionRangeBreakout, UseLimMoyenne = useLimMoyenne, LimMoyenneMultiplier = limMoyenneMultiplier, LimMoyenneRange = limMoyenneRange, LimMoyenneUseHighLow = limMoyenneUseHighLow, ResetPeriod = resetPeriod, MinBarsForSignal = minBarsForSignal, MinimumTicks = minimumTicks, MaximumTicks = maximumTicks, ShowLimusineOpenCloseUP = showLimusineOpenCloseUP, ShowLimusineOpenCloseDOWN = showLimusineOpenCloseDOWN, ShowLimusineHighLowUP = showLimusineHighLowUP, ShowLimusineHighLowDOWN = showLimusineHighLowDOWN, MinEntryDistanceUP = minEntryDistanceUP, MaxEntryDistanceUP = maxEntryDistanceUP, MaxUpperBreakouts = maxUpperBreakouts, OKisAfterBarsSinceResetUP = oKisAfterBarsSinceResetUP, OKisAboveUpperThreshold = oKisAboveUpperThreshold, OKisWithinMaxEntryDistance = oKisWithinMaxEntryDistance, OKisUpperBreakoutCountExceeded = oKisUpperBreakoutCountExceeded, MinEntryDistanceDOWN = minEntryDistanceDOWN, MaxEntryDistanceDOWN = maxEntryDistanceDOWN, MaxLowerBreakouts = maxLowerBreakouts, OKisAfterBarsSinceResetDown = oKisAfterBarsSinceResetDown, OKisBelovLowerThreshold = oKisBelovLowerThreshold, OKisWithinMaxEntryDistanceDown = oKisWithinMaxEntryDistanceDown, OKisLowerBreakoutCountExceeded = oKisLowerBreakoutCountExceeded, EnableDistanceFromVWAPCondition = enableDistanceFromVWAPCondition, MinDistanceFromVWAP = minDistanceFromVWAP, MaxDistanceFromVWAP = maxDistanceFromVWAP, EnableSTD3HighLowTracking = enableSTD3HighLowTracking, FperiodVol = fperiodVol, OKisVOL = oKisVOL }, input, ref cacheVwap4vaB);
 		}
 	}
 }
@@ -486,14 +551,14 @@ namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
 	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
 	{
-		public Indicators.ninpai.Vwap4vaB Vwap4vaB(bool enablePreviousSessionRangeBreakout, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
+		public Indicators.ninpai.Vwap4vaB Vwap4vaB(bool enablePreviousSessionRangeBreakout, bool useLimMoyenne, double limMoyenneMultiplier, int limMoyenneRange, bool limMoyenneUseHighLow, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
 		{
-			return indicator.Vwap4vaB(Input, enablePreviousSessionRangeBreakout, resetPeriod, minBarsForSignal, minimumTicks, maximumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, enableDistanceFromVWAPCondition, minDistanceFromVWAP, maxDistanceFromVWAP, enableSTD3HighLowTracking, fperiodVol, oKisVOL);
+			return indicator.Vwap4vaB(Input, enablePreviousSessionRangeBreakout, useLimMoyenne, limMoyenneMultiplier, limMoyenneRange, limMoyenneUseHighLow, resetPeriod, minBarsForSignal, minimumTicks, maximumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, enableDistanceFromVWAPCondition, minDistanceFromVWAP, maxDistanceFromVWAP, enableSTD3HighLowTracking, fperiodVol, oKisVOL);
 		}
 
-		public Indicators.ninpai.Vwap4vaB Vwap4vaB(ISeries<double> input , bool enablePreviousSessionRangeBreakout, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
+		public Indicators.ninpai.Vwap4vaB Vwap4vaB(ISeries<double> input , bool enablePreviousSessionRangeBreakout, bool useLimMoyenne, double limMoyenneMultiplier, int limMoyenneRange, bool limMoyenneUseHighLow, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
 		{
-			return indicator.Vwap4vaB(input, enablePreviousSessionRangeBreakout, resetPeriod, minBarsForSignal, minimumTicks, maximumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, enableDistanceFromVWAPCondition, minDistanceFromVWAP, maxDistanceFromVWAP, enableSTD3HighLowTracking, fperiodVol, oKisVOL);
+			return indicator.Vwap4vaB(input, enablePreviousSessionRangeBreakout, useLimMoyenne, limMoyenneMultiplier, limMoyenneRange, limMoyenneUseHighLow, resetPeriod, minBarsForSignal, minimumTicks, maximumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, enableDistanceFromVWAPCondition, minDistanceFromVWAP, maxDistanceFromVWAP, enableSTD3HighLowTracking, fperiodVol, oKisVOL);
 		}
 	}
 }
@@ -502,14 +567,14 @@ namespace NinjaTrader.NinjaScript.Strategies
 {
 	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
 	{
-		public Indicators.ninpai.Vwap4vaB Vwap4vaB(bool enablePreviousSessionRangeBreakout, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
+		public Indicators.ninpai.Vwap4vaB Vwap4vaB(bool enablePreviousSessionRangeBreakout, bool useLimMoyenne, double limMoyenneMultiplier, int limMoyenneRange, bool limMoyenneUseHighLow, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
 		{
-			return indicator.Vwap4vaB(Input, enablePreviousSessionRangeBreakout, resetPeriod, minBarsForSignal, minimumTicks, maximumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, enableDistanceFromVWAPCondition, minDistanceFromVWAP, maxDistanceFromVWAP, enableSTD3HighLowTracking, fperiodVol, oKisVOL);
+			return indicator.Vwap4vaB(Input, enablePreviousSessionRangeBreakout, useLimMoyenne, limMoyenneMultiplier, limMoyenneRange, limMoyenneUseHighLow, resetPeriod, minBarsForSignal, minimumTicks, maximumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, enableDistanceFromVWAPCondition, minDistanceFromVWAP, maxDistanceFromVWAP, enableSTD3HighLowTracking, fperiodVol, oKisVOL);
 		}
 
-		public Indicators.ninpai.Vwap4vaB Vwap4vaB(ISeries<double> input , bool enablePreviousSessionRangeBreakout, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
+		public Indicators.ninpai.Vwap4vaB Vwap4vaB(ISeries<double> input , bool enablePreviousSessionRangeBreakout, bool useLimMoyenne, double limMoyenneMultiplier, int limMoyenneRange, bool limMoyenneUseHighLow, int resetPeriod, int minBarsForSignal, int minimumTicks, int maximumTicks, bool showLimusineOpenCloseUP, bool showLimusineOpenCloseDOWN, bool showLimusineHighLowUP, bool showLimusineHighLowDOWN, int minEntryDistanceUP, int maxEntryDistanceUP, int maxUpperBreakouts, bool oKisAfterBarsSinceResetUP, bool oKisAboveUpperThreshold, bool oKisWithinMaxEntryDistance, bool oKisUpperBreakoutCountExceeded, int minEntryDistanceDOWN, int maxEntryDistanceDOWN, int maxLowerBreakouts, bool oKisAfterBarsSinceResetDown, bool oKisBelovLowerThreshold, bool oKisWithinMaxEntryDistanceDown, bool oKisLowerBreakoutCountExceeded, bool enableDistanceFromVWAPCondition, int minDistanceFromVWAP, int maxDistanceFromVWAP, bool enableSTD3HighLowTracking, int fperiodVol, bool oKisVOL)
 		{
-			return indicator.Vwap4vaB(input, enablePreviousSessionRangeBreakout, resetPeriod, minBarsForSignal, minimumTicks, maximumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, enableDistanceFromVWAPCondition, minDistanceFromVWAP, maxDistanceFromVWAP, enableSTD3HighLowTracking, fperiodVol, oKisVOL);
+			return indicator.Vwap4vaB(input, enablePreviousSessionRangeBreakout, useLimMoyenne, limMoyenneMultiplier, limMoyenneRange, limMoyenneUseHighLow, resetPeriod, minBarsForSignal, minimumTicks, maximumTicks, showLimusineOpenCloseUP, showLimusineOpenCloseDOWN, showLimusineHighLowUP, showLimusineHighLowDOWN, minEntryDistanceUP, maxEntryDistanceUP, maxUpperBreakouts, oKisAfterBarsSinceResetUP, oKisAboveUpperThreshold, oKisWithinMaxEntryDistance, oKisUpperBreakoutCountExceeded, minEntryDistanceDOWN, maxEntryDistanceDOWN, maxLowerBreakouts, oKisAfterBarsSinceResetDown, oKisBelovLowerThreshold, oKisWithinMaxEntryDistanceDown, oKisLowerBreakoutCountExceeded, enableDistanceFromVWAPCondition, minDistanceFromVWAP, maxDistanceFromVWAP, enableSTD3HighLowTracking, fperiodVol, oKisVOL);
 		}
 	}
 }
