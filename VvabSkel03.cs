@@ -23,7 +23,7 @@ using NinjaTrader.NinjaScript.DrawingTools;
 
 namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
-    public class Test30vab : Indicator
+    public class VvabSkel03 : Indicator
     {
         private double sumPriceVolume;
         private double sumVolume;
@@ -52,13 +52,20 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		
 		private double previousSessionVAUpperLevel = double.MinValue;
 		private double previousSessionVALowerLevel = double.MaxValue;
+		
+		// Ajoutez ces variables au début de la classe VvabSkel03
+		private double ibHigh = double.MinValue;
+		private double ibLow = double.MaxValue;
+		private bool ibPeriod = true;
+		private SessionIterator sessionIterator;
+		private DateTime currentDate = DateTime.MinValue;
 
         protected override void OnStateChange()
         {
             if (State == State.SetDefaults)
             {
                 Description = @"Indicateur BVA-Limusine combiné";
-                Name = "Test30vab";
+                Name = "VvabSkel03";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
@@ -122,6 +129,12 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 useHighForVAConditionDown = false;
 				SelectedEntryLevelUp = EntryLevelChoice.STD1;    // Au lieu de STD05
 				SelectedEntryLevelDown = EntryLevelChoice.STD1;  // Au lieu de STD05
+				
+				// Ajoutez les valeurs par défaut pour Initial Balance
+				EnableIBLogic = false;
+				IBStartTime = DateTime.Parse("15:30", System.Globalization.CultureInfo.InvariantCulture);
+				IBEndTime = DateTime.Parse("16:00", System.Globalization.CultureInfo.InvariantCulture);
+				IBOffsetTicks = 0;
             }
             else if (State == State.Configure)
             {
@@ -131,6 +144,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             {
                 VOL1 = VOL(Close);
                 VOLMA1 = VOLMA(Close, Convert.ToInt32(FperiodVol));
+				sessionIterator = new SessionIterator(Bars);
             }
         }
 
@@ -250,7 +264,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 figVAPointsDrawn = false;
             }
 
-            if (ShouldDrawUpArrow() && !IsPriceInPreviousValueArea())
+            if (ShouldDrawUpArrow())
             {
                 Draw.ArrowUp(this, "UpArrow" + CurrentBar, true, 0, Low[0] - 2 * TickSize, Brushes.Green);
                 upperBreakoutCount++;
@@ -265,7 +279,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         
                 Draw.Dot(this, "WhiteDotUp" + CurrentBar, true, 0, Close[0], Brushes.White);
             }
-            else if (ShouldDrawDownArrow() && !IsPriceInPreviousValueArea())
+            else if (ShouldDrawDownArrow())
             {
                 Draw.ArrowDown(this, "DownArrow" + CurrentBar, true, 0, High[0] + 2 * TickSize, Brushes.Red);
                 lowerBreakoutCount++;
@@ -310,10 +324,74 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		}
 
 		// ############################################################################################################### //
+		// Ajoutez cette nouvelle méthode pour gérer la logique IB
+		private void ApplyIBLogic(ref bool showUpArrow, ref bool showDownArrow)
+		{
+			if (!EnableIBLogic)
+				return;
+		
+			DateTime barTime = Time[0];
+			DateTime tradingDay = sessionIterator.GetTradingDay(barTime);
+		
+			// Détection du début de session
+			if (currentDate != tradingDay)
+			{
+				currentDate = tradingDay;
+				ibHigh = double.MinValue;
+				ibLow = double.MaxValue;
+				ibPeriod = true;
+			}
+		
+			// Déterminer l'heure de début et de fin de l'IB pour la session actuelle
+			DateTime ibStart = tradingDay.AddHours(IBStartTime.Hour).AddMinutes(IBStartTime.Minute);
+			DateTime ibEnd = tradingDay.AddHours(IBEndTime.Hour).AddMinutes(IBEndTime.Minute);
+		
+			// Gérer le cas où l'heure de fin est inférieure à l'heure de début (IB traversant minuit)
+			if (ibEnd <= ibStart)
+				ibEnd = ibEnd.AddDays(1);
+		
+			// Pendant la période IB
+			if (barTime >= ibStart && barTime <= ibEnd)
+			{
+				ibHigh = Math.Max(ibHigh, High[0]);
+				ibLow = Math.Min(ibLow, Low[0]);
+			}
+			// Après la période IB
+			else if (barTime > ibEnd && ibPeriod)
+			{
+				ibPeriod = false;
+			}
+		
+			// Appliquer la logique IB aux conditions existantes
+			if (!ibPeriod && ibHigh != double.MinValue && ibLow != double.MaxValue)
+			{
+				double upperBreak = ibHigh + IBOffsetTicks * TickSize;
+				double lowerBreak = ibLow - IBOffsetTicks * TickSize;
+		
+				// Modifier les conditions showUpArrow et showDownArrow
+				showUpArrow = showUpArrow && (Close[0] >= lowerBreak);
+				showDownArrow = showDownArrow && (Close[0] <= upperBreak);
+			}
+		}
+		// ############################################################################################################### //
 		// ############################################################################################################### //
 
         private bool ShouldDrawUpArrow()
         {
+			// Vérifier si au moins une condition UP est activée
+			bool isAnyUpConditionEnabled = OKisAfterBarsSinceResetUP || 
+										OKisAboveUpperThreshold || 
+										OKisWithinMaxEntryDistance || 
+										OKisUpperBreakoutCountExceeded;
+		
+			// Si aucune condition n'est activée, ne pas afficher de flèche
+			if (!isAnyUpConditionEnabled)
+				return false;
+			
+			// Vérifier si le prix est dans la Value Area précédente
+			if (BlockSignalsInPreviousValueArea && IsPriceInPreviousValueArea())
+				return false;
+			
 			// Vérifier la condition de range STD1 si activée
 			if (EnableSTD1RangeCheck)
 			{
@@ -404,11 +482,32 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             bool rangeBreakoutCondition = !EnablePreviousSessionRangeBreakout || 
                 (previousSessionHighStd1Upper != double.MinValue && Close[0] > previousSessionHighStd1Upper);
             
-            return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
+            // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
+			bool showUpArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
+			
+			// Appliquer la logique IB
+			bool showDownArrow = false; // dummy variable nécessaire pour la méthode
+			ApplyIBLogic(ref showUpArrow, ref showDownArrow);
+		
+			return showUpArrow;
         }
 
         private bool ShouldDrawDownArrow()
         {
+			// Vérifier si au moins une condition DOWN est activée
+			bool isAnyDownConditionEnabled = OKisAfterBarsSinceResetDown || 
+										OKisBelovLowerThreshold || 
+										OKisWithinMaxEntryDistanceDown || 
+										OKisLowerBreakoutCountExceeded;
+		
+			// Si aucune condition n'est activée, ne pas afficher de flèche
+			if (!isAnyDownConditionEnabled)
+				return false;
+			
+			// Vérifier si le prix est dans la Value Area précédente
+			if (BlockSignalsInPreviousValueArea && IsPriceInPreviousValueArea())
+				return false;
+			
 			// Vérifier la condition de range STD1 si activée
 			if (EnableSTD1RangeCheck)
 			{
@@ -499,7 +598,14 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             bool rangeBreakoutCondition = !EnablePreviousSessionRangeBreakout || 
                 (previousSessionLowStd1Lower != double.MaxValue && Close[0] < previousSessionLowStd1Lower);
             
-            return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
+            // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
+			bool showDownArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
+			
+			// Appliquer la logique IB
+			bool showUpArrow = false; // dummy variable nécessaire pour la méthode
+			ApplyIBLogic(ref showUpArrow, ref showDownArrow);
+		
+			return showDownArrow;
         }
         
         private void ResetSessionValues()
@@ -750,6 +856,27 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		[NinjaScriptProperty]
         [Display(Name = "Enable Previous Session Range Breakout", Description = "Enable checking for breakouts of the previous session's StdDev1 range", Order = 1, GroupName = "1.04_Enable Previous Session RangeBreakout")]
         public bool EnablePreviousSessionRangeBreakout { get; set; }
+		
+		//
+		// Ajoutez ces propriétés dans la région Properties
+		[NinjaScriptProperty]
+		[Display(Name="Enable Initial Balance Logic", Description="Enable the Initial Balance logic", Order=1, GroupName="1.05_Initial Balance")]
+		public bool EnableIBLogic { get; set; }
+		
+		[NinjaScriptProperty]
+		[PropertyEditor("NinjaTrader.Gui.Tools.TimeEditorKey")]
+		[Display(Name="IB Start Time", Description="Start time of the Initial Balance period", Order=2, GroupName="1.05_Initial Balance")]
+		public DateTime IBStartTime { get; set; }
+		
+		[NinjaScriptProperty]
+		[PropertyEditor("NinjaTrader.Gui.Tools.TimeEditorKey")]
+		[Display(Name="IB End Time", Description="End time of the Initial Balance period", Order=3, GroupName="1.05_Initial Balance")]
+		public DateTime IBEndTime { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name="IB Offset Ticks", Description="Number of ticks to offset the IB levels", Order=4, GroupName="1.05_Initial Balance")]
+		public int IBOffsetTicks { get; set; }
         
         // ############ Volume #############
         // Volume

@@ -23,7 +23,7 @@ using NinjaTrader.NinjaScript.DrawingTools;
 
 namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
-    public class Test30vab : Indicator
+    public class VvabSkel02 : Indicator
     {
         private double sumPriceVolume;
         private double sumVolume;
@@ -58,7 +58,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             if (State == State.SetDefaults)
             {
                 Description = @"Indicateur BVA-Limusine combiné";
-                Name = "Test30vab";
+                Name = "VvabSkel02";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
@@ -314,6 +314,16 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 
         private bool ShouldDrawUpArrow()
         {
+			// Vérifier si au moins une condition UP est activée
+			bool isAnyUpConditionEnabled = OKisAfterBarsSinceResetUP || 
+										OKisAboveUpperThreshold || 
+										OKisWithinMaxEntryDistance || 
+										OKisUpperBreakoutCountExceeded;
+		
+			// Si aucune condition n'est activée, ne pas afficher de flèche
+			if (!isAnyUpConditionEnabled)
+				return false;
+			
 			// Vérifier la condition de range STD1 si activée
 			if (EnableSTD1RangeCheck)
 			{
@@ -409,6 +419,16 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 
         private bool ShouldDrawDownArrow()
         {
+			// Vérifier si au moins une condition DOWN est activée
+			bool isAnyDownConditionEnabled = OKisAfterBarsSinceResetDown || 
+										OKisBelovLowerThreshold || 
+										OKisWithinMaxEntryDistanceDown || 
+										OKisLowerBreakoutCountExceeded;
+		
+			// Si aucune condition n'est activée, ne pas afficher de flèche
+			if (!isAnyDownConditionEnabled)
+				return false;
+			
 			// Vérifier la condition de range STD1 si activée
 			if (EnableSTD1RangeCheck)
 			{

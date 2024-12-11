@@ -23,7 +23,7 @@ using NinjaTrader.NinjaScript.DrawingTools;
 
 namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
-    public class Test30vab : Indicator
+    public class VvabSkel01 : Indicator
     {
         private double sumPriceVolume;
         private double sumVolume;
@@ -58,7 +58,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             if (State == State.SetDefaults)
             {
                 Description = @"Indicateur BVA-Limusine combiné";
-                Name = "Test30vab";
+                Name = "VvabSkel01";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
