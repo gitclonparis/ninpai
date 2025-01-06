@@ -851,7 +851,6 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 
             bool bvaCondition = (Close[0] > Open[0]) &&
                 (!OKisVOL || (VOL1[0] > VOLMA1[0])) &&
-				(!UseVolumeS || Volume[0] > volumeMaxS) &&
 				(!UseVolumeS || Volume[0] >= volumeMaxS) && 
                 (!OKisAfterBarsSinceResetUP || withinSignalTime) &&
 				(!OKisAboveUpperThreshold || Close[0] > (selectedUpperLevel + MinEntryDistanceUP * TickSize)) &&
@@ -1031,6 +1030,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 
             bool bvaCondition = (Close[0] < Open[0]) &&
                 (!OKisVOL || (VOL1[0] > VOLMA1[0])) &&
+				(!UseVolumeS || Volume[0] >= volumeMaxS) &&
                 (!OKisAfterBarsSinceResetDown || withinSignalTime) &&
 				(!OKisBelovLowerThreshold || Close[0] < (selectedLowerLevel - MinEntryDistanceDOWN * TickSize)) &&
 				(!OKisWithinMaxEntryDistanceDown || Close[0] >= (selectedLowerLevel - MaxEntryDistanceDOWN * TickSize)) &&
