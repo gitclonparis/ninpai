@@ -268,12 +268,6 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				return;
 			}
 			
-			// Mettre à jour volumeMaxS avec le plus grand volume
-			if (Volume[0] > volumeMaxS)
-			{
-				volumeMaxS = Volume[0];
-			}
-			//
 			figVA = ResetPeriod - 1;
             DateTime currentBarTime = Time[0];
             bool shouldReset = false;
@@ -321,6 +315,11 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             Values[6][0] = vwap - 2 * stdDev;
             Values[7][0] = vwap + 3 * stdDev;
             Values[8][0] = vwap - 3 * stdDev;
+			
+			if (Volume[0] > volumeMaxS)
+			{
+				volumeMaxS = Volume[0];
+			}
             
             if (EnablePreviousSessionRangeBreakout)
             {
