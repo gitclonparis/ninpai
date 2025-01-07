@@ -109,6 +109,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				UsePrevBarInVA = false;
                 FperiodVol = 9;
 				UseVolumeS = false;
+				EnableVolumeAnalysisPeriod = false;
 
                 // Paramètres Limusine
 				ActiveBuy = true;
@@ -269,10 +270,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			}
 			
 			// Mettre à jour volumeMaxS avec le plus grand volume
-			if (Volume[0] > volumeMaxS)
-			{
-				volumeMaxS = Volume[0];
-			}
+			
 			//
 			figVA = ResetPeriod - 1;
             DateTime currentBarTime = Time[0];
@@ -417,10 +415,49 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				previousSessionDynamicLowerLevel = dynamicLowerLevel;
 				dynamicAreaPointsDrawn = true;
 			}
+			// ######################################################## //
+			// bool withinSignalTime;
+            // if (SignalTimingMode == SignalTimeMode.Minutes)
+            // {
+                // withinSignalTime = timeSinceReset.TotalMinutes >= MinMinutesForSignal && 
+                                  // timeSinceReset.TotalMinutes <= MaxMinutesForSignal;
+            // }
+            // else
+            // {
+                // withinSignalTime = barsSinceReset >= MinBarsForSignal && 
+                                  // barsSinceReset <= MaxBarsForSignal;
+            // }
+			// if (withinSignalTime)
+			// {
+				// if (Volume[0] > volumeMaxS)
+				// {
+					// volumeMaxS = Volume[0];
+				// }
+			// }
+			
+			bool isWithinVolumeAnalysisPeriod;
+			if (SignalTimingMode == SignalTimeMode.Minutes)
+			{
+				isWithinVolumeAnalysisPeriod = timeSinceReset.TotalMinutes >= MinMinutesForSignal && 
+										timeSinceReset.TotalMinutes <= MaxMinutesForSignal;
+			}
+			else
+			{
+				isWithinVolumeAnalysisPeriod = barsSinceReset >= MinBarsForSignal && 
+										barsSinceReset <= MaxBarsForSignal;
+			}
+			
+			if (!EnableVolumeAnalysisPeriod || isWithinVolumeAnalysisPeriod)
+			{
+				if (Volume[0] > volumeMaxS)
+				{
+					volumeMaxS = Volume[0];
+				}
+			}
+            // ######################################################## //
 			
 			
 			
-            
             // Réinitialiser figVAPointsDrawn lors d'un reset
             if (shouldReset)
             {
@@ -1120,7 +1157,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             lowestSTD3Lower = double.MaxValue;
 			
 			dynamicAreaPointsDrawn = false;
-			volumeMaxS = Volume[0];
+			volumeMaxS = 0;
 			// previousVAUpperLevel = double.MinValue;
 			// previousVALowerLevel = double.MaxValue;
         }
@@ -1563,12 +1600,18 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         
         [NinjaScriptProperty]
         [Range(0, 1)]
-        [Display(Name = "OKisVOL", Description = "Check Volume", Order = 1, GroupName = "Volume")]
+        [Display(Name = "OKisVOL", Description = "Check Volume", Order = 2, GroupName = "Volume")]
         public bool OKisVOL { get; set; }
 		//
 		[NinjaScriptProperty]
-		[Display(Name="Use Volume S", Description="Active la comparaison avec le volume maximum de la période", Order=2, GroupName="Volume")]
+		[Display(Name="Use Volume S", Description="Active la comparaison avec le volume maximum de la période", Order=3, GroupName="Volume")]
 		public bool UseVolumeS { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name="Enable Volume Analysis Period", Description="Active la période d'analyse du volume maximum", Order=4, GroupName="Volume")]
+		public bool EnableVolumeAnalysisPeriod { get; set; }
+
+
 		//
         [Browsable(false)]
         [XmlIgnore]
