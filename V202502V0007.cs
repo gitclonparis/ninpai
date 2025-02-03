@@ -225,6 +225,13 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				UsePriorSvaUP = false;
 				UsePriorSvaDown = false;
 				BlockInPriorSVA = false;
+				//Wiker
+				UseWikerBadyUP = true;
+				UseWikerFilterUP = true;
+				WickFilterTicksUP = 5;
+				UseWikerBadyDown = true;
+				UseWikerFilterDown = true;
+				WickFilterTicksDown = 5;
             }
             else if (State == State.Configure)
             {
@@ -914,6 +921,35 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		}
 		
 		// ############################################## Prior VA Vwap ################################################################# //
+		// ############################################## Wiker ################################################################# //
+		private bool CheckWikerConditionsUp()
+		{
+			double upperWick = High[0] - Close[0];
+			double body = Close[0] - Open[0];
+		
+			if (UseWikerBadyUP && upperWick >= body)
+				return false;
+		
+			if (UseWikerFilterUP && upperWick / TickSize > WickFilterTicksUP)
+				return false;
+		
+			return true;
+		}
+		
+		private bool CheckWikerConditionsDown()
+		{
+			double lowerWick = Close[0] - Low[0];
+			double body = Open[0] - Close[0];
+		
+			if (UseWikerBadyDown && lowerWick >= body)
+				return false;
+		
+			if (UseWikerFilterDown && lowerWick / TickSize > WickFilterTicksDown)
+				return false;
+		
+			return true;
+		}
+		// ############################################## Wiker ################################################################# //
 
         private bool ShouldDrawUpArrow()
         { 
@@ -1060,7 +1096,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 (previousSessionHighStd1Upper != double.MinValue && Close[0] > previousSessionHighStd1Upper);
             
             // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
-			bool showUpArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsUp();
+			bool showUpArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsUp() && CheckWikerConditionsUp();
 			if (EnableDeltaModuleUp)
 			{
 				showUpArrow = showUpArrow && CheckDeltaConditionsUp();
@@ -1248,7 +1284,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 (previousSessionLowStd1Lower != double.MaxValue && Close[0] < previousSessionLowStd1Lower);
             
             // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
-			bool showDownArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsDown();
+			bool showDownArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsDown() && CheckWikerConditionsDown();
 			if (EnableDeltaModuleDown)
 			{
 				showDownArrow = showDownArrow && CheckDeltaConditionsDown();
@@ -1961,6 +1997,34 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		[Display(Name = "Block In Prior SVA", Description = "Block arrows inside prior session Value Area", Order=5, GroupName="Prior VA Vwap")]
 		public bool BlockInPriorSVA { get; set; }
 		// ############################ Prior VA Vwap ######################################### //
+		// ############################ Wiker ######################################### //
+		// private bool UseWikerBadyUP = true;
+		// private bool UseWikerFilterUP = true;
+		// private int WickFilterTicksUP = 5;
+		// private bool UseWikerBadyDown = true;
+		// private bool UseWikerFilterDown = true;
+		// private int WickFilterTicksDown = 5;
+		[NinjaScriptProperty]
+		[Display(Name = "Check Wick", GroupName = "Check Wick", Order = 1)]
+		public bool UseWikerBadyUP { get; set; }
+		[NinjaScriptProperty]
+		[Display(Name = "Wick Filter", GroupName = "Check Wick", Order = 2)]
+		public bool UseWikerFilterUP { get; set; }
+		[NinjaScriptProperty]
+		[Range(1, 100)]
+		[Display(Name = "Wick Filter Ticks", GroupName = "Check Wick", Order = 3)]
+		public int WickFilterTicksUP { get; set; }
+		[NinjaScriptProperty]
+		[Display(Name = "Check Wick", GroupName = "Check Wick", Order = 4)]
+		public bool UseWikerBadyDown { get; set; }
+		[NinjaScriptProperty]
+		[Display(Name = "Wick Filter", GroupName = "Check Wick", Order = 5)]
+		public bool UseWikerFilterDown { get; set; }
+		[NinjaScriptProperty]
+		[Range(1, 100)]
+		[Display(Name = "Wick Filter Ticks", GroupName = "Check Wick", Order = 6)]
+		public int WickFilterTicksDown { get; set; }
+		// ############################ Wiker ######################################### //
         #endregion
     }
 }
