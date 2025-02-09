@@ -69,6 +69,14 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         [NinjaScriptProperty]
         [Display(Name = "Three White Soldiers", Order = 10, GroupName = "Motifs Haussiers")]
         public bool ThreeWhiteSoldiers { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Doji", Order = 11, GroupName = "Motifs Haussiers")]
+		public bool Doji { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Stick Sandwich", Order = 12, GroupName = "Motifs Haussiers")]
+		public bool StickSandwich { get; set; }
 
         // Paramètres utilisateur pour chaque motif baissier
         [NinjaScriptProperty]
@@ -152,6 +160,8 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 PiercingLine = false;
                 RisingThreeMethods = false;
                 ThreeWhiteSoldiers = false;
+				Doji = false;
+				StickSandwich = false;
 
                 // Motifs baissiers par défaut (désactivés)
                 BearishBeltHold = false;
@@ -220,6 +230,16 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             {
                 Draw.ArrowUp(this, "ThreeWhiteSoldiers" + CurrentBar, true, 0, Low[0] - TickSize, Brushes.Green);
             }
+			
+			if (Doji && CandlestickPattern(ChartPattern.Doji, TrendStrength)[0] == 1)
+			{
+				Draw.ArrowUp(this, "Doji" + CurrentBar, true, 0, Low[0] - TickSize, Brushes.Green);
+			}
+			
+			if (StickSandwich && CandlestickPattern(ChartPattern.StickSandwich, TrendStrength)[0] == 1)
+			{
+				Draw.ArrowUp(this, "StickSandwich" + CurrentBar, true, 0, Low[0] - TickSize, Brushes.Green);
+			}
 
             // Détection des motifs baissiers
             if (BearishBeltHold && CandlestickPattern(ChartPattern.BearishBeltHold, TrendStrength)[0] == 1)
@@ -285,18 +305,18 @@ namespace NinjaTrader.NinjaScript.Indicators
 	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
 	{
 		private ninpai.CandlestickPatternArrows[] cacheCandlestickPatternArrows;
-		public ninpai.CandlestickPatternArrows CandlestickPatternArrows(bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
+		public ninpai.CandlestickPatternArrows CandlestickPatternArrows(bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool doji, bool stickSandwich, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
 		{
-			return CandlestickPatternArrows(Input, bullishBeltHold, bullishEngulfing, bullishHarami, bullishHaramiCross, hammer, invertedHammer, morningStar, piercingLine, risingThreeMethods, threeWhiteSoldiers, bearishBeltHold, bearishEngulfing, bearishHarami, bearishHaramiCross, darkCloudCover, downsideTasukiGap, eveningStar, fallingThreeMethods, hangingMan, shootingStar, threeBlackCrows, upsideGapTwoCrows, upsideTasukiGap, trendStrength);
+			return CandlestickPatternArrows(Input, bullishBeltHold, bullishEngulfing, bullishHarami, bullishHaramiCross, hammer, invertedHammer, morningStar, piercingLine, risingThreeMethods, threeWhiteSoldiers, doji, stickSandwich, bearishBeltHold, bearishEngulfing, bearishHarami, bearishHaramiCross, darkCloudCover, downsideTasukiGap, eveningStar, fallingThreeMethods, hangingMan, shootingStar, threeBlackCrows, upsideGapTwoCrows, upsideTasukiGap, trendStrength);
 		}
 
-		public ninpai.CandlestickPatternArrows CandlestickPatternArrows(ISeries<double> input, bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
+		public ninpai.CandlestickPatternArrows CandlestickPatternArrows(ISeries<double> input, bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool doji, bool stickSandwich, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
 		{
 			if (cacheCandlestickPatternArrows != null)
 				for (int idx = 0; idx < cacheCandlestickPatternArrows.Length; idx++)
-					if (cacheCandlestickPatternArrows[idx] != null && cacheCandlestickPatternArrows[idx].BullishBeltHold == bullishBeltHold && cacheCandlestickPatternArrows[idx].BullishEngulfing == bullishEngulfing && cacheCandlestickPatternArrows[idx].BullishHarami == bullishHarami && cacheCandlestickPatternArrows[idx].BullishHaramiCross == bullishHaramiCross && cacheCandlestickPatternArrows[idx].Hammer == hammer && cacheCandlestickPatternArrows[idx].InvertedHammer == invertedHammer && cacheCandlestickPatternArrows[idx].MorningStar == morningStar && cacheCandlestickPatternArrows[idx].PiercingLine == piercingLine && cacheCandlestickPatternArrows[idx].RisingThreeMethods == risingThreeMethods && cacheCandlestickPatternArrows[idx].ThreeWhiteSoldiers == threeWhiteSoldiers && cacheCandlestickPatternArrows[idx].BearishBeltHold == bearishBeltHold && cacheCandlestickPatternArrows[idx].BearishEngulfing == bearishEngulfing && cacheCandlestickPatternArrows[idx].BearishHarami == bearishHarami && cacheCandlestickPatternArrows[idx].BearishHaramiCross == bearishHaramiCross && cacheCandlestickPatternArrows[idx].DarkCloudCover == darkCloudCover && cacheCandlestickPatternArrows[idx].DownsideTasukiGap == downsideTasukiGap && cacheCandlestickPatternArrows[idx].EveningStar == eveningStar && cacheCandlestickPatternArrows[idx].FallingThreeMethods == fallingThreeMethods && cacheCandlestickPatternArrows[idx].HangingMan == hangingMan && cacheCandlestickPatternArrows[idx].ShootingStar == shootingStar && cacheCandlestickPatternArrows[idx].ThreeBlackCrows == threeBlackCrows && cacheCandlestickPatternArrows[idx].UpsideGapTwoCrows == upsideGapTwoCrows && cacheCandlestickPatternArrows[idx].UpsideTasukiGap == upsideTasukiGap && cacheCandlestickPatternArrows[idx].TrendStrength == trendStrength && cacheCandlestickPatternArrows[idx].EqualsInput(input))
+					if (cacheCandlestickPatternArrows[idx] != null && cacheCandlestickPatternArrows[idx].BullishBeltHold == bullishBeltHold && cacheCandlestickPatternArrows[idx].BullishEngulfing == bullishEngulfing && cacheCandlestickPatternArrows[idx].BullishHarami == bullishHarami && cacheCandlestickPatternArrows[idx].BullishHaramiCross == bullishHaramiCross && cacheCandlestickPatternArrows[idx].Hammer == hammer && cacheCandlestickPatternArrows[idx].InvertedHammer == invertedHammer && cacheCandlestickPatternArrows[idx].MorningStar == morningStar && cacheCandlestickPatternArrows[idx].PiercingLine == piercingLine && cacheCandlestickPatternArrows[idx].RisingThreeMethods == risingThreeMethods && cacheCandlestickPatternArrows[idx].ThreeWhiteSoldiers == threeWhiteSoldiers && cacheCandlestickPatternArrows[idx].Doji == doji && cacheCandlestickPatternArrows[idx].StickSandwich == stickSandwich && cacheCandlestickPatternArrows[idx].BearishBeltHold == bearishBeltHold && cacheCandlestickPatternArrows[idx].BearishEngulfing == bearishEngulfing && cacheCandlestickPatternArrows[idx].BearishHarami == bearishHarami && cacheCandlestickPatternArrows[idx].BearishHaramiCross == bearishHaramiCross && cacheCandlestickPatternArrows[idx].DarkCloudCover == darkCloudCover && cacheCandlestickPatternArrows[idx].DownsideTasukiGap == downsideTasukiGap && cacheCandlestickPatternArrows[idx].EveningStar == eveningStar && cacheCandlestickPatternArrows[idx].FallingThreeMethods == fallingThreeMethods && cacheCandlestickPatternArrows[idx].HangingMan == hangingMan && cacheCandlestickPatternArrows[idx].ShootingStar == shootingStar && cacheCandlestickPatternArrows[idx].ThreeBlackCrows == threeBlackCrows && cacheCandlestickPatternArrows[idx].UpsideGapTwoCrows == upsideGapTwoCrows && cacheCandlestickPatternArrows[idx].UpsideTasukiGap == upsideTasukiGap && cacheCandlestickPatternArrows[idx].TrendStrength == trendStrength && cacheCandlestickPatternArrows[idx].EqualsInput(input))
 						return cacheCandlestickPatternArrows[idx];
-			return CacheIndicator<ninpai.CandlestickPatternArrows>(new ninpai.CandlestickPatternArrows(){ BullishBeltHold = bullishBeltHold, BullishEngulfing = bullishEngulfing, BullishHarami = bullishHarami, BullishHaramiCross = bullishHaramiCross, Hammer = hammer, InvertedHammer = invertedHammer, MorningStar = morningStar, PiercingLine = piercingLine, RisingThreeMethods = risingThreeMethods, ThreeWhiteSoldiers = threeWhiteSoldiers, BearishBeltHold = bearishBeltHold, BearishEngulfing = bearishEngulfing, BearishHarami = bearishHarami, BearishHaramiCross = bearishHaramiCross, DarkCloudCover = darkCloudCover, DownsideTasukiGap = downsideTasukiGap, EveningStar = eveningStar, FallingThreeMethods = fallingThreeMethods, HangingMan = hangingMan, ShootingStar = shootingStar, ThreeBlackCrows = threeBlackCrows, UpsideGapTwoCrows = upsideGapTwoCrows, UpsideTasukiGap = upsideTasukiGap, TrendStrength = trendStrength }, input, ref cacheCandlestickPatternArrows);
+			return CacheIndicator<ninpai.CandlestickPatternArrows>(new ninpai.CandlestickPatternArrows(){ BullishBeltHold = bullishBeltHold, BullishEngulfing = bullishEngulfing, BullishHarami = bullishHarami, BullishHaramiCross = bullishHaramiCross, Hammer = hammer, InvertedHammer = invertedHammer, MorningStar = morningStar, PiercingLine = piercingLine, RisingThreeMethods = risingThreeMethods, ThreeWhiteSoldiers = threeWhiteSoldiers, Doji = doji, StickSandwich = stickSandwich, BearishBeltHold = bearishBeltHold, BearishEngulfing = bearishEngulfing, BearishHarami = bearishHarami, BearishHaramiCross = bearishHaramiCross, DarkCloudCover = darkCloudCover, DownsideTasukiGap = downsideTasukiGap, EveningStar = eveningStar, FallingThreeMethods = fallingThreeMethods, HangingMan = hangingMan, ShootingStar = shootingStar, ThreeBlackCrows = threeBlackCrows, UpsideGapTwoCrows = upsideGapTwoCrows, UpsideTasukiGap = upsideTasukiGap, TrendStrength = trendStrength }, input, ref cacheCandlestickPatternArrows);
 		}
 	}
 }
@@ -305,14 +325,14 @@ namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
 	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
 	{
-		public Indicators.ninpai.CandlestickPatternArrows CandlestickPatternArrows(bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
+		public Indicators.ninpai.CandlestickPatternArrows CandlestickPatternArrows(bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool doji, bool stickSandwich, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
 		{
-			return indicator.CandlestickPatternArrows(Input, bullishBeltHold, bullishEngulfing, bullishHarami, bullishHaramiCross, hammer, invertedHammer, morningStar, piercingLine, risingThreeMethods, threeWhiteSoldiers, bearishBeltHold, bearishEngulfing, bearishHarami, bearishHaramiCross, darkCloudCover, downsideTasukiGap, eveningStar, fallingThreeMethods, hangingMan, shootingStar, threeBlackCrows, upsideGapTwoCrows, upsideTasukiGap, trendStrength);
+			return indicator.CandlestickPatternArrows(Input, bullishBeltHold, bullishEngulfing, bullishHarami, bullishHaramiCross, hammer, invertedHammer, morningStar, piercingLine, risingThreeMethods, threeWhiteSoldiers, doji, stickSandwich, bearishBeltHold, bearishEngulfing, bearishHarami, bearishHaramiCross, darkCloudCover, downsideTasukiGap, eveningStar, fallingThreeMethods, hangingMan, shootingStar, threeBlackCrows, upsideGapTwoCrows, upsideTasukiGap, trendStrength);
 		}
 
-		public Indicators.ninpai.CandlestickPatternArrows CandlestickPatternArrows(ISeries<double> input , bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
+		public Indicators.ninpai.CandlestickPatternArrows CandlestickPatternArrows(ISeries<double> input , bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool doji, bool stickSandwich, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
 		{
-			return indicator.CandlestickPatternArrows(input, bullishBeltHold, bullishEngulfing, bullishHarami, bullishHaramiCross, hammer, invertedHammer, morningStar, piercingLine, risingThreeMethods, threeWhiteSoldiers, bearishBeltHold, bearishEngulfing, bearishHarami, bearishHaramiCross, darkCloudCover, downsideTasukiGap, eveningStar, fallingThreeMethods, hangingMan, shootingStar, threeBlackCrows, upsideGapTwoCrows, upsideTasukiGap, trendStrength);
+			return indicator.CandlestickPatternArrows(input, bullishBeltHold, bullishEngulfing, bullishHarami, bullishHaramiCross, hammer, invertedHammer, morningStar, piercingLine, risingThreeMethods, threeWhiteSoldiers, doji, stickSandwich, bearishBeltHold, bearishEngulfing, bearishHarami, bearishHaramiCross, darkCloudCover, downsideTasukiGap, eveningStar, fallingThreeMethods, hangingMan, shootingStar, threeBlackCrows, upsideGapTwoCrows, upsideTasukiGap, trendStrength);
 		}
 	}
 }
@@ -321,14 +341,14 @@ namespace NinjaTrader.NinjaScript.Strategies
 {
 	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
 	{
-		public Indicators.ninpai.CandlestickPatternArrows CandlestickPatternArrows(bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
+		public Indicators.ninpai.CandlestickPatternArrows CandlestickPatternArrows(bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool doji, bool stickSandwich, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
 		{
-			return indicator.CandlestickPatternArrows(Input, bullishBeltHold, bullishEngulfing, bullishHarami, bullishHaramiCross, hammer, invertedHammer, morningStar, piercingLine, risingThreeMethods, threeWhiteSoldiers, bearishBeltHold, bearishEngulfing, bearishHarami, bearishHaramiCross, darkCloudCover, downsideTasukiGap, eveningStar, fallingThreeMethods, hangingMan, shootingStar, threeBlackCrows, upsideGapTwoCrows, upsideTasukiGap, trendStrength);
+			return indicator.CandlestickPatternArrows(Input, bullishBeltHold, bullishEngulfing, bullishHarami, bullishHaramiCross, hammer, invertedHammer, morningStar, piercingLine, risingThreeMethods, threeWhiteSoldiers, doji, stickSandwich, bearishBeltHold, bearishEngulfing, bearishHarami, bearishHaramiCross, darkCloudCover, downsideTasukiGap, eveningStar, fallingThreeMethods, hangingMan, shootingStar, threeBlackCrows, upsideGapTwoCrows, upsideTasukiGap, trendStrength);
 		}
 
-		public Indicators.ninpai.CandlestickPatternArrows CandlestickPatternArrows(ISeries<double> input , bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
+		public Indicators.ninpai.CandlestickPatternArrows CandlestickPatternArrows(ISeries<double> input , bool bullishBeltHold, bool bullishEngulfing, bool bullishHarami, bool bullishHaramiCross, bool hammer, bool invertedHammer, bool morningStar, bool piercingLine, bool risingThreeMethods, bool threeWhiteSoldiers, bool doji, bool stickSandwich, bool bearishBeltHold, bool bearishEngulfing, bool bearishHarami, bool bearishHaramiCross, bool darkCloudCover, bool downsideTasukiGap, bool eveningStar, bool fallingThreeMethods, bool hangingMan, bool shootingStar, bool threeBlackCrows, bool upsideGapTwoCrows, bool upsideTasukiGap, int trendStrength)
 		{
-			return indicator.CandlestickPatternArrows(input, bullishBeltHold, bullishEngulfing, bullishHarami, bullishHaramiCross, hammer, invertedHammer, morningStar, piercingLine, risingThreeMethods, threeWhiteSoldiers, bearishBeltHold, bearishEngulfing, bearishHarami, bearishHaramiCross, darkCloudCover, downsideTasukiGap, eveningStar, fallingThreeMethods, hangingMan, shootingStar, threeBlackCrows, upsideGapTwoCrows, upsideTasukiGap, trendStrength);
+			return indicator.CandlestickPatternArrows(input, bullishBeltHold, bullishEngulfing, bullishHarami, bullishHaramiCross, hammer, invertedHammer, morningStar, piercingLine, risingThreeMethods, threeWhiteSoldiers, doji, stickSandwich, bearishBeltHold, bearishEngulfing, bearishHarami, bearishHaramiCross, darkCloudCover, downsideTasukiGap, eveningStar, fallingThreeMethods, hangingMan, shootingStar, threeBlackCrows, upsideGapTwoCrows, upsideTasukiGap, trendStrength);
 		}
 	}
 }
