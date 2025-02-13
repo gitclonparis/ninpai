@@ -23,10 +23,8 @@ using NinjaTrader.NinjaScript.DrawingTools;
 
 namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
-    public class V202502V0008 : Indicator
+    public class V202502V0020 : Indicator
     {
-		
-		
         private double sumPriceVolume;
         private double sumVolume;
         private double sumSquaredPriceVolume;
@@ -85,7 +83,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             if (State == State.SetDefaults)
             {
                 Description = @"Indicateur BVA-Limusine combiné";
-                Name = "V202502V0008";
+                Name = "V202502V0020";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
@@ -240,14 +238,9 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				BearishEngulfing = false;
 				ThreeBlackCrows = false;
 				
-				// Valeurs par défaut
-                ImbalanceRatio = 2.0;
-                MinDelta = 100;
-                MinBullishImbalanceCount = 3;
-                MinBearishImbalanceCount = 3;
-                UseImbalanceUP = true;
-                UseImbalanceDown = true;
-				
+				UseKogiVwapUP = false;
+				KogiVwapBarsToCheck = 3;
+				KogiVwapOffsetTicks = 2;
             }
             else if (State == State.Configure)
             {
@@ -275,7 +268,6 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 VOLMA1 = VOLMA(Close, Convert.ToInt32(FperiodVol));
 				sessionIterator = new SessionIterator(Bars);
 				priorDayOHLC = PriorDayOHLC();
-				tickSize = Instrument.MasterInstrument.TickSize;
 				vwap = OrderFlowVWAP(VWAPResolution.Standard, Bars.TradingHours, VWAPStandardDeviations.Three, 1, 2, 3);
 				
 				if (EnableUPlimDeltaSession || EnableDownLimDeltaSession)
@@ -315,8 +307,6 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				}
 				return;
 			}
-			
-			// EvaluateImbalances(out bullishCount, out bearishCount);
 			
 			figVA = ResetPeriod - 1;
             DateTime currentBarTime = Time[0];
@@ -516,6 +506,23 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				Draw.Dot(this, "BlueDotDown" + CurrentBar, true, 0, blueDotPrice, Brushes.Blue);
 				Draw.Dot(this, "WhiteDotDown" + CurrentBar, true, 0, Close[0], Brushes.White);
             }
+			// int slopePeriod = 5; // Ajustez selon vos besoins
+			// if (CurrentBars[0] < slopePeriod)
+				// return;
+			// if (double.IsNaN(Values[0][0]))
+				// return;
+			
+			// if (CurrentBar >= slopePeriod)
+			// {
+				// double vwapSlope = Slope(Values[0], slopePeriod, 0);
+				// if (!double.IsNaN(vwapSlope))
+				// {
+					// Values[9][0] = vwapSlope; 
+					// Draw.Text(this, "VWAPSlope" + CurrentBar, $"Slope: {vwapSlope:F4}", 0, Values[0][0], Brushes.White);
+					// Brush slopeColor = vwapSlope > 0 ? Brushes.Green : Brushes.Red;
+					// Draw.Dot(this, "VWAPSlopeDot" + CurrentBar, true, 0, Values[0][0], slopeColor);
+				// }
+			// }
         }
 		// ############################################################################################################### //
 		// ############################################################################################################### //
@@ -1004,63 +1011,34 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			return hasSignal;
 		}
 		// ############################################## CheckBearishPatterns ################################################################# //
-		
-		// ############################################## ImbalanceRatio ################################################################# //
-		private void EvaluateImbalances(out int bullishCount, out int bearishCount)
-        {
-            bullishCount = 0;
-            bearishCount = 0;
-
-            var volBarType = Bars.BarsSeries.BarsType as NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType;
-            if (volBarType == null)
-                return;
-
-            // Parcourt tous les niveaux de la barre (de Low à High, par incréments de tickSize)
-            for (double price = Low[0]; price <= High[0]; price += tickSize)
-            {
-                double askLevel = price + tickSize;  // Comparaison en diagonale : volume Ask au niveau "price + tickSize"
-                long bidVol = volBarType.Volumes[CurrentBar].GetBidVolumeForPrice(price);
-                long askVol = volBarType.Volumes[CurrentBar].GetAskVolumeForPrice(askLevel);
-
-                // Si aucun volume n'est présent, passer à l'itération suivante
-                if (bidVol == 0 && askVol == 0)
-                    continue;
-
-                // Imbalance acheteuse : on vérifie si le volume Ask est suffisamment supérieur au volume Bid
-                // Formule : deltaup = askVol - bidVol et ratioAskBid = askVol / bidVol
-                if (bidVol > 0)
-                {
-                    long deltaup = askVol - bidVol;
-                    double ratioAskBid = (double)askVol / bidVol;
-                    if (ratioAskBid >= ImbalanceRatio && deltaup >= MinDelta)
-                    {
-                        bullishCount++;
-                    }
-                }
-
-                // Imbalance vendeuse : on vérifie si le volume Bid est suffisamment supérieur au volume Ask
-                // Formule : deltadown = bidVol - askVol et ratioBidAsk = bidVol / askVol
-                if (askVol > 0)
-                {
-                    long deltadown = bidVol - askVol;
-                    double ratioBidAsk = (double)bidVol / askVol;
-                    if (ratioBidAsk >= ImbalanceRatio && deltadown >= MinDelta)
-                    {
-                        bearishCount++;
-                    }
-                }
-            }
-        }
-		// ############################################## ImbalanceRatio ################################################################# //
-		
-
-        private bool ShouldDrawUpArrow()
-        {
-			EvaluateImbalances(out bullishCount, out bearishCount);
-			
-			if (UseImbalanceUP && bullishCount < MinBullishImbalanceCount)
+		// ############################################## CheckKogiVwapConditions ################################################################# //
+		private bool CheckKogiVwapConditions()
+		{
+			if (!UseKogiVwapUP)
+				return true;
+				
+			// Vérifier les conditions initiales pour la barre 0
+			if (!(Open[0] > Values[0][0] && Low[0] < Values[0][0] && Close[0] > Values[0][0]))
 				return false;
 			
+			// Vérifier si une barre dans la plage dépasse STD2 Upper + offset
+			double std2UpperWithOffset = Values[5][0] + (KogiVwapOffsetTicks * TickSize);
+			
+			for (int i = 1; i <= KogiVwapBarsToCheck; i++)
+			{
+				if (CurrentBar < i)
+					break;
+					
+				if (High[i] > std2UpperWithOffset)
+					return true;
+			}
+			
+			return false;
+		}
+		// ############################################## CheckKogiVwapConditions ################################################################# //
+
+        private bool ShouldDrawUpArrow()
+        {			
 			bool candlestickPattern = CheckBullishPatterns();
 			 if (!candlestickPattern && (BullishEngulfing || ThreeWhiteSoldiers))
 				 return false;
@@ -1181,7 +1159,8 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                     break;
             }
 
-            bool bvaCondition = (Close[0] > Open[0]) &&
+            bool bvaCondition = //(Close[0] > Open[0]) &&
+				// (!UseKogiVwapUP || (Open[0] > Values[0][0] && Low[0] <= Values[0][0] && Close[0] > Values[0][0])) &&
                 (!OKisVOL || (VOL1[0] > VOLMA1[0])) &&
 				(!UseVolumeS || Volume[0] >= volumeMaxS) &&				
 				(!UseVolumeIncrease || CheckVolumeIncrease()) &&
@@ -1200,15 +1179,20 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 
             double openCloseDiff = Math.Abs(Open[0] - Close[0]) / TickSize;
             double highLowDiff = Math.Abs(High[0] - Low[0]) / TickSize;
-            bool limusineCondition = (ShowLimusineOpenCloseUP && openCloseDiff >= MinimumTicks && openCloseDiff <= MaximumTicks && Close[0] > Open[0]) ||
+            // bool limusineCondition = (ShowLimusineOpenCloseUP && openCloseDiff >= MinimumTicks && openCloseDiff <= MaximumTicks && Close[0] > Open[0]) ||
+                                    // (ShowLimusineHighLowUP && highLowDiff >= MinimumTicks && highLowDiff <= MaximumTicks && Close[0] > Open[0]);
+			
+			bool limusineCondition = (ShowLimusineOpenCloseUP && openCloseDiff >= MinimumTicks && openCloseDiff <= MaximumTicks) ||
                                     (ShowLimusineHighLowUP && highLowDiff >= MinimumTicks && highLowDiff <= MaximumTicks && Close[0] > Open[0]);
 
             bool std3Condition = !EnableSTD3HighLowTracking || Values[7][0] >= highestSTD3Upper;
             bool rangeBreakoutCondition = !EnablePreviousSessionRangeBreakout || 
                 (previousSessionHighStd1Upper != double.MinValue && Close[0] > previousSessionHighStd1Upper);
             
+			bool kogiVwapCondition = !UseKogiVwapUP || CheckKogiVwapConditions();
             // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
 			bool showUpArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsUp() && CheckWikerConditionsUp();
+			showUpArrow = showUpArrow && kogiVwapCondition;
 			if (EnableDeltaModuleUp)
 			{
 				showUpArrow = showUpArrow && CheckDeltaConditionsUp();
@@ -1254,10 +1238,6 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 
         private bool ShouldDrawDownArrow()
         {
-			EvaluateImbalances(out bullishCount, out bearishCount);
-			if (UseImbalanceDown && bearishCount < MinBearishImbalanceCount)
-				return false;
-			
 			bool candlestickPattern = CheckBearishPatterns();
 			if (!candlestickPattern && (BearishEngulfing || ThreeBlackCrows))
 				return false;
@@ -2163,51 +2143,20 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		[Display(Name = "Three Black Crows", Order = 2, GroupName = "Candlestick Patterns DOWN")]
 		public bool ThreeBlackCrows { get; set; }
 		
+		// Ajouter dans la région Properties
+		[NinjaScriptProperty]
+		[Display(Name="Use KogiVWAP UP", Description="Enable KogiVWAP conditions for UP signals", Order=1, GroupName="0.5_KogiVWAP")]
+		public bool UseKogiVwapUP { get; set; }
 		
-		// ############################ Imbalance ######################################### //
-		private double tickSize;
-        private SolidColorBrush transRed;
-        private SolidColorBrush transGreen;
-		private int bullishCount;
-		private int bearishCount;
-
-        [NinjaScriptProperty]
-        [Display(Name = "Imbalance Ratio", 
-                 Description = "Ratio minimal entre le volume dominant et le volume faible (ex. 2 signifie qu’un côté doit être au moins 2 fois supérieur à l’autre)", 
-                 Order = 1, GroupName = "Imbalance")]
-        public double ImbalanceRatio { get; set; }
-
-        [NinjaScriptProperty]
-        [Display(Name = "Minimum Delta", 
-                 Description = "Delta minimum requis (différence entre les volumes) pour déclencher le signal", 
-                 Order = 2, GroupName = "Imbalance")]
-        public long MinDelta { get; set; }
-
-        [NinjaScriptProperty]
-        [Display(Name = "Min Bullish Imbalance Count", 
-                 Description = "Nombre minimal d'imbalances acheteuses requis pour afficher la flèche haussière", 
-                 Order = 3, GroupName = "Imbalance")]
-        public int MinBullishImbalanceCount { get; set; }
-
-        [NinjaScriptProperty]
-        [Display(Name = "Min Bearish Imbalance Count", 
-                 Description = "Nombre minimal d'imbalances vendeuses requis pour afficher la flèche baissière", 
-                 Order = 4, GroupName = "Imbalance")]
-        public int MinBearishImbalanceCount { get; set; }
-
-        [NinjaScriptProperty]
-        [Display(Name = "Use Imbalance UP", 
-                 Description = "Si activé, affiche la flèche haussière (UP) lorsque la condition est remplie", 
-                 Order = 5, GroupName = "Imbalance")]
-        public bool UseImbalanceUP { get; set; }
-
-        [NinjaScriptProperty]
-        [Display(Name = "Use Imbalance Down", 
-                 Description = "Si activé, affiche la flèche baissière (DOWN) lorsque la condition est remplie", 
-                 Order = 6, GroupName = "Imbalance")]
-        public bool UseImbalanceDown { get; set; }
+		[NinjaScriptProperty]
+		[Range(1, 6)]
+		[Display(Name="KogiVWAP Bars to Check", Description="Number of bars to check after bar 0", Order=2, GroupName="0.5_KogiVWAP")]
+		public int KogiVwapBarsToCheck { get; set; }
 		
-		// ############################ Imbalance ######################################### //
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name="KogiVWAP Offset Ticks", Description="Offset in ticks above STD2 Upper", Order=3, GroupName="0.5_KogiVWAP")]
+		public int KogiVwapOffsetTicks { get; set; }
 		
         #endregion
     }

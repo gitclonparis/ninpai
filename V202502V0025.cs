@@ -23,7 +23,7 @@ using NinjaTrader.NinjaScript.DrawingTools;
 
 namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
-    public class V202502V0008 : Indicator
+    public class V202502V0025 : Indicator
     {
 		
 		
@@ -85,7 +85,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             if (State == State.SetDefaults)
             {
                 Description = @"Indicateur BVA-Limusine combiné";
-                Name = "V202502V0008";
+                Name = "V202502V0025";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
@@ -247,6 +247,14 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 MinBearishImbalanceCount = 3;
                 UseImbalanceUP = true;
                 UseImbalanceDown = true;
+				
+				// Slope Filter defaults
+				UseVwapSlopeFilterUp = false;
+				UseVwapSlopeFilterDown = false;
+				MinVwapSlopeUp = 0.30;
+				MaxVwapSlopeDown = -0.30;
+				SlopeStartBars = 5;
+				SlopeEndBars = 0;
 				
             }
             else if (State == State.Configure)
@@ -1209,6 +1217,15 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             
             // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
 			bool showUpArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsUp() && CheckWikerConditionsUp();
+			
+			if (UseVwapSlopeFilterUp && CurrentBar >= SlopeStartBars)
+			{
+				// double vwapSlope = Slope(Values[0], SlopeStartBars, SlopeEndBars);
+				double vwapSlope = Slope(VWAP, SlopeStartBars, SlopeEndBars);
+				if (vwapSlope < MinVwapSlopeUp)
+					showUpArrow = false;
+			}
+			
 			if (EnableDeltaModuleUp)
 			{
 				showUpArrow = showUpArrow && CheckDeltaConditionsUp();
@@ -1405,6 +1422,15 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             
             // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
 			bool showDownArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsDown() && CheckWikerConditionsDown();
+			
+			if (UseVwapSlopeFilterDown && CurrentBar >= SlopeStartBars)
+			{
+				// double vwapSlope = Slope(Values[0], SlopeStartBars, SlopeEndBars);
+				double vwapSlope = Slope(VWAP, SlopeStartBars, SlopeEndBars);
+				if (vwapSlope > MaxVwapSlopeDown)
+					showDownArrow = false;
+			}
+			
 			if (EnableDeltaModuleDown)
 			{
 				showDownArrow = showDownArrow && CheckDeltaConditionsDown();
@@ -2208,7 +2234,35 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         public bool UseImbalanceDown { get; set; }
 		
 		// ############################ Imbalance ######################################### //
+		// ############################ Slope Filter Properties ######################################### //
+		[NinjaScriptProperty]
+		[Display(Name = "Use VWAP Slope Filter UP", Description = "Enable VWAP slope filter for UP signals", Order = 1, GroupName = "Slope Filter")]
+		public bool UseVwapSlopeFilterUp { get; set; }
 		
+		[NinjaScriptProperty]
+		[Display(Name = "Use VWAP Slope Filter DOWN", Description = "Enable VWAP slope filter for DOWN signals", Order = 2, GroupName = "Slope Filter")]
+		public bool UseVwapSlopeFilterDown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0.0, 10.0)]
+		[Display(Name = "Min VWAP Slope UP", Description = "Minimum VWAP slope value for UP signals", Order = 3, GroupName = "Slope Filter")]
+		public double MinVwapSlopeUp { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(-10.0, 0.0)]
+		[Display(Name = "Max VWAP Slope DOWN", Description = "Maximum VWAP slope value for DOWN signals", Order = 4, GroupName = "Slope Filter")]
+		public double MaxVwapSlopeDown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(1, 20)]
+		[Display(Name = "Slope Start Bars", Description = "Number of bars ago to start slope calculation", Order = 5, GroupName = "Slope Filter")]
+		public int SlopeStartBars { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 10)]
+		[Display(Name = "Slope End Bars", Description = "Number of bars ago to end slope calculation", Order = 6, GroupName = "Slope Filter")]
+		public int SlopeEndBars { get; set; }
+		// ############################ Slope Filter Properties ######################################### //
         #endregion
     }
 }
