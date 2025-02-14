@@ -249,12 +249,17 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 UseImbalanceDown = true;
 				
 				// Slope Filter defaults
-				UseVwapSlopeFilterUp = false;
-				UseVwapSlopeFilterDown = false;
-				MinVwapSlopeUp = 0.30;
-				MaxVwapSlopeDown = -0.30;
 				SlopeStartBars = 5;
 				SlopeEndBars = 0;
+				MinVwapSessionSlopeUp = 0.30;
+				MinVwapResetSlopeUp = 0.30;
+				MinStdUpperSlopeUp = 0.30;
+				MinStdLowerSlopeUp = 0.30;
+				
+				MaxVwapSessionSlopeDown = -0.30;
+				MaxVwapResetSlopeDown = -0.30;
+				MaxStdUpperSlopeDown = -0.30;
+				MaxStdLowerSlopeDown = -0.30;
 				
             }
             else if (State == State.Configure)
@@ -1218,12 +1223,39 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
 			bool showUpArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsUp() && CheckWikerConditionsUp();
 			
-			if (UseVwapSlopeFilterUp && CurrentBar >= SlopeStartBars)
+			if (CurrentBar >= SlopeStartBars)
 			{
-				// double vwapSlope = Slope(Values[0], SlopeStartBars, SlopeEndBars);
-				double vwapSlope = Slope(VWAP, SlopeStartBars, SlopeEndBars);
-				if (vwapSlope < MinVwapSlopeUp)
-					showUpArrow = false;
+				// VWAP Session
+				if (UseVwapSessioSlopeFilterUp)
+				{
+					double vwapSessionSlope = Slope(VWAP, SlopeStartBars, SlopeEndBars);
+					if (vwapSessionSlope < MinVwapSessionSlopeUp)
+						showUpArrow = false;
+				}
+				
+				// VWAP Reset
+				if (UseVwapSlopeFilterUp)
+				{
+					double vwapResetSlope = Slope(Values[0], SlopeStartBars, SlopeEndBars);
+					if (vwapResetSlope < MinVwapResetSlopeUp)
+						showUpArrow = false;
+				}
+				
+				// STD1 Upper
+				if (UseStdUpperSloperUP)
+				{
+					double stdUpperSlope = Slope(Values[3], SlopeStartBars, SlopeEndBars);
+					if (stdUpperSlope < MinStdUpperSlopeUp)
+						showUpArrow = false;
+				}
+				
+				// STD1 Lower
+				if (UseStdLowerUP)
+				{
+					double stdLowerSlope = Slope(Values[4], SlopeStartBars, SlopeEndBars);
+					if (stdLowerSlope < MinStdLowerSlopeUp)
+						showUpArrow = false;
+				}
 			}
 			
 			if (EnableDeltaModuleUp)
@@ -1423,12 +1455,39 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
 			bool showDownArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsDown() && CheckWikerConditionsDown();
 			
-			if (UseVwapSlopeFilterDown && CurrentBar >= SlopeStartBars)
+			if (CurrentBar >= SlopeStartBars)
 			{
-				// double vwapSlope = Slope(Values[0], SlopeStartBars, SlopeEndBars);
-				double vwapSlope = Slope(VWAP, SlopeStartBars, SlopeEndBars);
-				if (vwapSlope > MaxVwapSlopeDown)
-					showDownArrow = false;
+				// VWAP Session
+				if (UseVwapSessioSlopeFilterDown)
+				{
+					double vwapSessionSlope = Slope(VWAP, SlopeStartBars, SlopeEndBars);
+					if (vwapSessionSlope > MaxVwapSessionSlopeDown)
+						showDownArrow = false;
+				}
+				
+				// VWAP Reset
+				if (UseVwapSlopeFilterDown)
+				{
+					double vwapResetSlope = Slope(Values[0], SlopeStartBars, SlopeEndBars);
+					if (vwapResetSlope > MaxVwapResetSlopeDown)
+						showDownArrow = false;
+				}
+				
+				// STD1 Upper
+				if (UseStdUpperSloperDown)
+				{
+					double stdUpperSlope = Slope(Values[3], SlopeStartBars, SlopeEndBars);
+					if (stdUpperSlope > MaxStdUpperSlopeDown)
+						showDownArrow = false;
+				}
+				
+				// STD1 Lower
+				if (UseStdLowerDown)
+				{
+					double stdLowerSlope = Slope(Values[4], SlopeStartBars, SlopeEndBars);
+					if (stdLowerSlope > MaxStdLowerSlopeDown)
+						showDownArrow = false;
+				}
 			}
 			
 			if (EnableDeltaModuleDown)
@@ -2236,32 +2295,88 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		// ############################ Imbalance ######################################### //
 		// ############################ Slope Filter Properties ######################################### //
 		[NinjaScriptProperty]
-		[Display(Name = "Use VWAP Slope Filter UP", Description = "Enable VWAP slope filter for UP signals", Order = 1, GroupName = "Slope Filter")]
-		public bool UseVwapSlopeFilterUp { get; set; }
-		
-		[NinjaScriptProperty]
-		[Display(Name = "Use VWAP Slope Filter DOWN", Description = "Enable VWAP slope filter for DOWN signals", Order = 2, GroupName = "Slope Filter")]
-		public bool UseVwapSlopeFilterDown { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(0.0, 10.0)]
-		[Display(Name = "Min VWAP Slope UP", Description = "Minimum VWAP slope value for UP signals", Order = 3, GroupName = "Slope Filter")]
-		public double MinVwapSlopeUp { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(-10.0, 0.0)]
-		[Display(Name = "Max VWAP Slope DOWN", Description = "Maximum VWAP slope value for DOWN signals", Order = 4, GroupName = "Slope Filter")]
-		public double MaxVwapSlopeDown { get; set; }
-		
-		[NinjaScriptProperty]
 		[Range(1, 20)]
-		[Display(Name = "Slope Start Bars", Description = "Number of bars ago to start slope calculation", Order = 5, GroupName = "Slope Filter")]
+		[Display(Name = "Slope Start Bars", Description = "Number of bars ago to start slope calculation", Order = 1, GroupName = "Slope Filter")]
 		public int SlopeStartBars { get; set; }
 		
 		[NinjaScriptProperty]
 		[Range(0, 10)]
-		[Display(Name = "Slope End Bars", Description = "Number of bars ago to end slope calculation", Order = 6, GroupName = "Slope Filter")]
+		[Display(Name = "Slope End Bars", Description = "Number of bars ago to end slope calculation", Order = 2, GroupName = "Slope Filter")]
 		public int SlopeEndBars { get; set; }
+		
+		// Pour UP
+		[NinjaScriptProperty]
+		[Display(Name = "Use VWAP Session Slope Filter UP", GroupName = "Slope Filter")]
+		public bool UseVwapSessioSlopeFilterUp { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0.0, 10.0)]
+		[Display(Name = "Min VWAP Session Slope UP", Description = "Minimum VWAP session slope value for UP signals", GroupName = "Slope Filter")]
+		public double MinVwapSessionSlopeUp { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use VWAP Reset Slope Filter UP", GroupName = "Slope Filter")]
+		public bool UseVwapSlopeFilterUp { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0.0, 10.0)]
+		[Display(Name = "Min VWAP Reset Slope UP", Description = "Minimum VWAP reset slope value for UP signals", GroupName = "Slope Filter")]
+		public double MinVwapResetSlopeUp { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use STD1 Upper Slope Filter UP", GroupName = "Slope Filter")]
+		public bool UseStdUpperSloperUP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0.0, 10.0)]
+		[Display(Name = "Min STD1 Upper Slope UP", Description = "Minimum STD1 Upper slope value for UP signals", GroupName = "Slope Filter")]
+		public double MinStdUpperSlopeUp { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use STD1 Lower Slope Filter UP", GroupName = "Slope Filter")]
+		public bool UseStdLowerUP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0.0, 10.0)]
+		[Display(Name = "Min STD1 Lower Slope UP", Description = "Minimum STD1 Lower slope value for UP signals", GroupName = "Slope Filter")]
+		public double MinStdLowerSlopeUp { get; set; }
+		
+		// Pour DOWN
+		[NinjaScriptProperty]
+		[Display(Name = "Use VWAP Session Slope Filter DOWN", GroupName = "Slope Filter")]
+		public bool UseVwapSessioSlopeFilterDown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(-10.0, 0.0)]
+		[Display(Name = "Max VWAP Session Slope DOWN", Description = "Maximum VWAP session slope value for DOWN signals", GroupName = "Slope Filter")]
+		public double MaxVwapSessionSlopeDown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use VWAP Reset Slope Filter DOWN", GroupName = "Slope Filter")]
+		public bool UseVwapSlopeFilterDown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(-10.0, 0.0)]
+		[Display(Name = "Max VWAP Reset Slope DOWN", Description = "Maximum VWAP reset slope value for DOWN signals", GroupName = "Slope Filter")]
+		public double MaxVwapResetSlopeDown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use STD1 Upper Slope Filter DOWN", GroupName = "Slope Filter")]
+		public bool UseStdUpperSloperDown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(-10.0, 0.0)]
+		[Display(Name = "Max STD1 Upper Slope DOWN", Description = "Maximum STD1 Upper slope value for DOWN signals", GroupName = "Slope Filter")]
+		public double MaxStdUpperSlopeDown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use STD1 Lower Slope Filter DOWN", GroupName = "Slope Filter")]
+		public bool UseStdLowerDown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(-10.0, 0.0)]
+		[Display(Name = "Max STD1 Lower Slope DOWN", Description = "Maximum STD1 Lower slope value for DOWN signals", GroupName = "Slope Filter")]
+		public double MaxStdLowerSlopeDown { get; set; }
 		// ############################ Slope Filter Properties ######################################### //
         #endregion
     }
