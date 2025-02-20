@@ -24,7 +24,7 @@ using NinjaTrader.NinjaScript.DrawingTools;
 // Changement du namespace pour éviter les conflits
 namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
-    public class DiagonalVolumeImbalanceV5 : Indicator
+    public class DiagonalVolumeImbalanceV10 : Indicator
     {
         private double tickSize;
         private SolidColorBrush transRed;
@@ -75,7 +75,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 Description = "Indicateur de Diagonal Volume Imbalance avec filtrage par nombre d'imbalances et options d'activation pour chaque sens. " +
                               "Une flèche haussière est affichée si le nombre d'imbalances acheteuses dépasse le seuil défini (et si UseImbalanceUP est activé), " +
                               "et une flèche baissière si le nombre d'imbalances vendeuses dépasse le seuil (et si UseImbalanceDown est activé).";
-                Name = "DiagonalVolumeImbalanceV5";
+                Name = "DiagonalVolumeImbalanceV10";
                 Calculate = Calculate.OnBarClose; // On utilise la clôture de la barre pour le calcul
                 IsOverlay = true;                 // L'indicateur s'affiche sur le graphique principal
 
@@ -150,14 +150,14 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 long askVol = volBarType.Volumes[CurrentBar].GetAskVolumeForPrice(askLevel);
 
                 // Si aucun volume n'est présent, passer à l'itération suivante
-                if (bidVol == 0 && askVol == 0)
-                    continue;
+                // if (bidVol == 0 && askVol == 0)
+                    // continue;
 
                 // Imbalance acheteuse : on vérifie si le volume Ask est suffisamment supérieur au volume Bid
                 // Formule : deltaup = askVol - bidVol et ratioAskBid = askVol / bidVol
+				long deltaup = askVol - bidVol;
                 if (bidVol > 0)
                 {
-                    long deltaup = askVol - bidVol;
                     double ratioAskBid = (double)askVol / bidVol;
                     if (ratioAskBid >= ImbalanceRatio && deltaup >= MinDelta)
                     {
@@ -166,12 +166,18 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                         Draw.Dot(this, tag, true, 0, price, transGreen);
                     }
                 }
+				else if (bidVol == 0 && askVol >= MinDelta)
+                {
+                    bullishCount++;
+                    string tag = "BullishPoint_" + CurrentBar + "_" + price;
+                    Draw.Dot(this, tag, true, 0, price, transGreen);
+                }
 
                 // Imbalance vendeuse : on vérifie si le volume Bid est suffisamment supérieur au volume Ask
                 // Formule : deltadown = bidVol - askVol et ratioBidAsk = bidVol / askVol
+				long deltadown = bidVol - askVol;
                 if (askVol > 0)
                 {
-                    long deltadown = bidVol - askVol;
                     double ratioBidAsk = (double)bidVol / askVol;
                     if (ratioBidAsk >= ImbalanceRatio && deltadown >= MinDelta)
                     {
@@ -179,6 +185,12 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 						string tag = "BearishPoint_" + CurrentBar + "_" + price;
                         Draw.Dot(this, tag, true, 0, askLevel, transRed);
                     }
+                }
+				else if (askVol == 0 && bidVol >= MinDelta)
+                {
+                    bearishCount++;
+                    string tag = "BearishPoint_" + CurrentBar + "_" + price;
+                    Draw.Dot(this, tag, true, 0, askLevel, transRed);
                 }
             }
         }
