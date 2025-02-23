@@ -53,40 +53,6 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		//
 		protected override void OnBarUpdate()
         {
-            // if (CurrentBar < 2) return;
-
-            // double high1 = High[2]; // Bougie 1
-            // double low1 = Low[2];
-
-            // double high3 = High[0]; // Bougie 3
-            // double low3 = Low[0];
-
-            // double low2 = Low[1];  // Bougie 2 (intermédiaire)
-            // double high2 = High[1];
-
-            // if (high1 < low3 && high2 > high1 && low2 < low3)
-            // {
-                // Draw.Rectangle(this, 
-                    // "BullishFVG" + CurrentBar.ToString(), 
-                    // false, 
-                    // 2, high1,                    // Point de départ (x,y)
-                    // -RectangleExtension, low3,   // Point d'arrivée (x,y)
-                    // bullishColor, 
-                    // bullishColor, 
-                    // 30);
-            // }
-            // if (low1 > high3 && low2 > low1 && high2 < high3)
-            // {
-                // Draw.Rectangle(this, 
-                    // "BearishFVG" + CurrentBar.ToString(), 
-                    // false, 
-                    // 2, low1,                     // Point de départ (x,y)
-                    // -RectangleExtension, high3,  // Point d'arrivée (x,y)
-                    // bearishColor, 
-                    // bearishColor, 
-                    // 30);
-            // }
-			
 			if (CurrentBar < 2) return;
 
             double high1 = High[2]; // Bougie 1

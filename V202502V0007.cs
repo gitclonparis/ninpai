@@ -226,12 +226,18 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				UsePriorSvaDown = false;
 				BlockInPriorSVA = false;
 				//Wiker
-				UseWikerBadyUP = true;
-				UseWikerFilterUP = true;
+				UseWikerBadyUP = false;
+				UseWikerFilterUP = false;
 				WickFilterTicksUP = 5;
-				UseWikerBadyDown = true;
-				UseWikerFilterDown = true;
+				UseWikerBadyDown = false;
+				UseWikerFilterDown = false;
 				WickFilterTicksDown = 5;
+				
+				RectangleExtension = 5;
+                UseFVGup = false;
+                UseFVGdown = false;
+                AddPlot(bullishColor, "Bullish FVG");
+                AddPlot(bearishColor, "Bearish FVG");
             }
             else if (State == State.Configure)
             {
@@ -487,6 +493,11 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				Draw.Dot(this, "RedDotUp" + CurrentBar, true, 0, redDotPrice, Brushes.Red);
 				Draw.Dot(this, "BlueDotUp" + CurrentBar, true, 0, blueDotPrice, Brushes.Blue);
 				Draw.Dot(this, "WhiteDotUp" + CurrentBar, true, 0, Close[0], Brushes.White);
+				var candleData = GetCandleData();
+				if (IsBullishFVG(candleData))
+				{
+					DrawBullishFVG(candleData);
+				}
             }
             else if (ActiveSell && ShouldDrawDownArrow())
             {
@@ -496,6 +507,11 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				Draw.Dot(this, "RedDotDown" + CurrentBar, true, 0, redDotPrice, Brushes.Red);
 				Draw.Dot(this, "BlueDotDown" + CurrentBar, true, 0, blueDotPrice, Brushes.Blue);
 				Draw.Dot(this, "WhiteDotDown" + CurrentBar, true, 0, Close[0], Brushes.White);
+				var candleData = GetCandleData();
+				if (IsBearishFVG(candleData))
+				{
+					DrawBearishFVG(candleData);
+				}
             }
         }
 		// ############################################################################################################### //
@@ -950,6 +966,82 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			return true;
 		}
 		// ############################################## Wiker ################################################################# //
+		// ############################################## FVG ################################################################# //
+		private CandleData GetCandleData()
+        {
+            return new CandleData
+            {
+                High1 = High[2],  // Bougie 1
+                Low1 = Low[2],
+                Close1 = Close[2],
+                
+                High2 = High[1],  // Bougie 2
+                Low2 = Low[1],
+                Close2 = Close[1],
+                Open2 = Open[1],
+                
+                High3 = High[0],  // Bougie 3
+                Low3 = Low[0],
+                Open3 = Open[0]
+            };
+        }
+
+        private void DrawBullishFVG(CandleData data)
+        {
+            Draw.Rectangle(this, 
+                "BullishFVG" + CurrentBar.ToString(), 
+                false, 
+                2, data.High1,
+                -RectangleExtension, data.Low3,
+                bullishColor, 
+                bullishColor, 
+                30);
+            
+            if (UseFVGup)
+            {
+                Draw.ArrowUp(this, 
+                    "BullishArrow" + CurrentBar.ToString(),
+                    false,
+                    0,
+                    Low[0] - TickSize * 5,
+                    bullishColor);
+            }
+        }
+
+        private void DrawBearishFVG(CandleData data)
+        {
+            Draw.Rectangle(this, 
+                "BearishFVG" + CurrentBar.ToString(), 
+                false, 
+                2, data.Low1,
+                -RectangleExtension, data.High3,
+                bearishColor, 
+                bearishColor, 
+                30);
+            
+            if (UseFVGdown)
+            {
+                Draw.ArrowDown(this, 
+                    "BearishArrow" + CurrentBar.ToString(),
+                    false,
+                    0,
+                    High[0] + TickSize * 5,
+                    bearishColor);
+            }
+        }
+
+        private bool IsBullishFVG(CandleData data)
+        {
+            return data.Close2 > data.Open2 && data.Low3 > data.High1;
+        }
+
+        private bool IsBearishFVG(CandleData data)
+        {
+            return data.Close2 < data.Open2 && data.High3 < data.Low1;
+        }
+		
+		
+		// ############################################## FVG ################################################################# //
 
         private bool ShouldDrawUpArrow()
         { 
@@ -1097,6 +1189,13 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             
             // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
 			bool showUpArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsUp() && CheckWikerConditionsUp();
+			
+			if (UseFVGup && CurrentBar >= 2)
+			{
+				var candleData = GetCandleData();
+				showUpArrow = showUpArrow && IsBullishFVG(candleData);
+			}
+			
 			if (EnableDeltaModuleUp)
 			{
 				showUpArrow = showUpArrow && CheckDeltaConditionsUp();
@@ -1285,6 +1384,13 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             
             // return bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition;
 			bool showDownArrow = bvaCondition && limusineCondition && std3Condition && rangeBreakoutCondition && CheckMecheConditionsDown() && CheckWikerConditionsDown();
+			
+			if (UseFVGdown && CurrentBar >= 2)
+			{
+				var candleData = GetCandleData();
+				showDownArrow = showDownArrow && IsBearishFVG(candleData);
+			}
+			
 			if (EnableDeltaModuleDown)
 			{
 				showDownArrow = showDownArrow && CheckDeltaConditionsDown();
@@ -2025,6 +2131,33 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		[Display(Name = "Wick Filter Ticks", GroupName = "Check Wick", Order = 6)]
 		public int WickFilterTicksDown { get; set; }
 		// ############################ Wiker ######################################### //
+		
+		// ############################ FVG ######################################### //
+		private Brush bullishColor = Brushes.LightGreen;
+        private Brush bearishColor = Brushes.LightCoral;
+        // private candleData = GetCandleData();
+        private class CandleData
+        {
+            public double High1, Low1, Close1;
+            public double High2, Low2, Close2, Open2;
+            public double High3, Low3, Open3;
+        }
+        
+        [NinjaScriptProperty]
+        [Range(1, int.MaxValue)]
+        [Display(Name="Extension des rectangles (barres)", Description="Nombre de barres sur lesquelles étendre les rectangles", Order=1, GroupName="FVG")]
+        public int RectangleExtension { get; set; }
+
+        [NinjaScriptProperty]
+        [Display(Name="Afficher flèche FVG haussier", Description="Active l'affichage des flèches pour les FVG haussiers", Order=2, GroupName="FVG")]
+        public bool UseFVGup { get; set; }
+
+        [NinjaScriptProperty]
+        [Display(Name="Afficher flèche FVG baissier", Description="Active l'affichage des flèches pour les FVG baissiers", Order=3, GroupName="FVG")]
+        public bool UseFVGdown { get; set; }
+		
+		// ############################ FVG ######################################### //
+		
         #endregion
     }
 }
