@@ -68,95 +68,105 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 downSwingEndBars = new List<int>();
             }
         }
+		
+		
+		//
+		protected override void OnBarUpdate()
+		{
+			// Nous avons besoin d'un minimum de barres pour commencer
+			if (CurrentBar < SwingStrength * 20)
+				return;
+				
+			// Vérifie s'il y a un nouveau swing haut
+			if (swing.SwingHigh[0] != 0 && CurrentBar > SwingStrength)
+			{
+				// Chercher le dernier swing bas précédent
+				int lastLowBar = -1;
+				double lastLowValue = 0;
+				
+				for (int i = 0; i < Math.Min(100, CurrentBar); i++)  // Limiter la recherche au nombre de barres disponibles
+				{
+					int lowBar = swing.SwingLowBar(i, 1, Math.Min(100, CurrentBar));
+					if (lowBar >= 0 && lowBar < CurrentBar)
+					{
+						lastLowBar = lowBar;
+						lastLowValue = swing.SwingLow[0 + i]; // Accéder au SwingLow directement via l'index i
+						break;
+					}
+				}
+				
+				// Si nous avons trouvé un swing bas précédent
+				if (lastLowBar >= 0)
+				{
+					// Calculer la différence en ticks
+					double priceDifference = swing.SwingHigh[0] - lastLowValue;
+					double tickDifference = priceDifference / TickSize;
+					
+					// Si la différence dépasse notre filtre
+					if (tickDifference >= TickFilter)
+					{
+						// Stocker les barres de début et de fin du swing
+						upSwingStartBars.Add(lastLowBar);
+						upSwingEndBars.Add(CurrentBar);
+						
+						// Dessiner des flèches sur toutes les barres de ce swing
+						for (int i = lastLowBar; i <= CurrentBar; i++)
+						{
+							if (CurrentBar - i >= 0 && CurrentBar - i < Low.Count) // Vérifier que l'index est valide
+							{
+								Draw.ArrowUp(this, "UpArrow_" + i, false, i, Low[CurrentBar - i] - 2 * TickSize, UpArrowColor);
+							}
+						}
+					}
+				}
+			}
+			
+			// Vérifie s'il y a un nouveau swing bas
+			if (swing.SwingLow[0] != 0 && CurrentBar > SwingStrength)
+			{
+				// Chercher le dernier swing haut précédent
+				int lastHighBar = -1;
+				double lastHighValue = 0;
+				
+				for (int i = 0; i < Math.Min(100, CurrentBar); i++)  // Limiter la recherche au nombre de barres disponibles
+				{
+					int highBar = swing.SwingHighBar(i, 1, Math.Min(100, CurrentBar));
+					if (highBar >= 0 && highBar < CurrentBar)
+					{
+						lastHighBar = highBar;
+						lastHighValue = swing.SwingHigh[0 + i]; // Accéder au SwingHigh directement via l'index i
+						break;
+					}
+				}
+				
+				// Si nous avons trouvé un swing haut précédent
+				if (lastHighBar >= 0)
+				{
+					// Calculer la différence en ticks
+					double priceDifference = lastHighValue - swing.SwingLow[0];
+					double tickDifference = priceDifference / TickSize;
+					
+					// Si la différence dépasse notre filtre
+					if (tickDifference >= TickFilter)
+					{
+						// Stocker les barres de début et de fin du swing
+						downSwingStartBars.Add(lastHighBar);
+						downSwingEndBars.Add(CurrentBar);
+						
+						// Dessiner des flèches sur toutes les barres de ce swing
+						for (int i = lastHighBar; i <= CurrentBar; i++)
+						{
+							if (CurrentBar - i >= 0 && CurrentBar - i < High.Count) // Vérifier que l'index est valide
+							{
+								Draw.ArrowDown(this, "DownArrow_" + i, false, i, High[CurrentBar - i] + 2 * TickSize, DownArrowColor);
+							}
+						}
+					}
+				}
+			}
+		}
 
-        protected override void OnBarUpdate()
-        {
-            // Nous avons besoin d'un minimum de barres pour commencer
-            if (CurrentBar < SwingStrength * 2)
-                return;
-                
-            // Vérifie s'il y a un nouveau swing haut
-            if (swing.SwingHigh[0] != 0 && CurrentBar > SwingStrength)
-            {
-                // Chercher le dernier swing bas précédent
-                int lastLowBar = -1;
-                double lastLowValue = 0;
-                
-                for (int i = 0; i < 100; i++)  // Cherche dans les 100 dernières barres maximum
-                {
-                    int lowBar = swing.SwingLowBar(i, 1, 100);
-                    if (lowBar >= 0 && lowBar < CurrentBar)
-                    {
-                        lastLowBar = lowBar;
-                        lastLowValue = swing.SwingLow[CurrentBar - lowBar];
-                        break;
-                    }
-                }
-                
-                // Si nous avons trouvé un swing bas précédent
-                if (lastLowBar >= 0)
-                {
-                    // Calculer la différence en ticks
-                    double priceDifference = swing.SwingHigh[0] - lastLowValue;
-                    double tickDifference = priceDifference / TickSize;
-                    
-                    // Si la différence dépasse notre filtre
-                    if (tickDifference >= TickFilter)
-                    {
-                        // Stocker les barres de début et de fin du swing
-                        upSwingStartBars.Add(lastLowBar);
-                        upSwingEndBars.Add(CurrentBar);
-                        
-                        // Dessiner des flèches sur toutes les barres de ce swing
-                        for (int i = lastLowBar; i <= CurrentBar; i++)
-                        {
-                            Draw.ArrowUp(this, "UpArrow_" + i, false, i, Low[CurrentBar - i] - 2 * TickSize, UpArrowColor);
-                        }
-                    }
-                }
-            }
-            
-            // Vérifie s'il y a un nouveau swing bas
-            if (swing.SwingLow[0] != 0 && CurrentBar > SwingStrength)
-            {
-                // Chercher le dernier swing haut précédent
-                int lastHighBar = -1;
-                double lastHighValue = 0;
-                
-                for (int i = 0; i < 100; i++)  // Cherche dans les 100 dernières barres maximum
-                {
-                    int highBar = swing.SwingHighBar(i, 1, 100);
-                    if (highBar >= 0 && highBar < CurrentBar)
-                    {
-                        lastHighBar = highBar;
-                        lastHighValue = swing.SwingHigh[CurrentBar - highBar];
-                        break;
-                    }
-                }
-                
-                // Si nous avons trouvé un swing haut précédent
-                if (lastHighBar >= 0)
-                {
-                    // Calculer la différence en ticks
-                    double priceDifference = lastHighValue - swing.SwingLow[0];
-                    double tickDifference = priceDifference / TickSize;
-                    
-                    // Si la différence dépasse notre filtre
-                    if (tickDifference >= TickFilter)
-                    {
-                        // Stocker les barres de début et de fin du swing
-                        downSwingStartBars.Add(lastHighBar);
-                        downSwingEndBars.Add(CurrentBar);
-                        
-                        // Dessiner des flèches sur toutes les barres de ce swing
-                        for (int i = lastHighBar; i <= CurrentBar; i++)
-                        {
-                            Draw.ArrowDown(this, "DownArrow_" + i, false, i, High[CurrentBar - i] + 2 * TickSize, DownArrowColor);
-                        }
-                    }
-                }
-            }
-        }
+        
 
         #region Properties
         [Range(1, int.MaxValue), NinjaScriptProperty]
@@ -195,3 +205,60 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         #endregion
     }
 }
+
+#region NinjaScript generated code. Neither change nor remove.
+
+namespace NinjaTrader.NinjaScript.Indicators
+{
+	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
+	{
+		private ninpai.SwingDetector[] cacheSwingDetector;
+		public ninpai.SwingDetector SwingDetector(int swingStrength, int tickFilter)
+		{
+			return SwingDetector(Input, swingStrength, tickFilter);
+		}
+
+		public ninpai.SwingDetector SwingDetector(ISeries<double> input, int swingStrength, int tickFilter)
+		{
+			if (cacheSwingDetector != null)
+				for (int idx = 0; idx < cacheSwingDetector.Length; idx++)
+					if (cacheSwingDetector[idx] != null && cacheSwingDetector[idx].SwingStrength == swingStrength && cacheSwingDetector[idx].TickFilter == tickFilter && cacheSwingDetector[idx].EqualsInput(input))
+						return cacheSwingDetector[idx];
+			return CacheIndicator<ninpai.SwingDetector>(new ninpai.SwingDetector(){ SwingStrength = swingStrength, TickFilter = tickFilter }, input, ref cacheSwingDetector);
+		}
+	}
+}
+
+namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
+{
+	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
+	{
+		public Indicators.ninpai.SwingDetector SwingDetector(int swingStrength, int tickFilter)
+		{
+			return indicator.SwingDetector(Input, swingStrength, tickFilter);
+		}
+
+		public Indicators.ninpai.SwingDetector SwingDetector(ISeries<double> input , int swingStrength, int tickFilter)
+		{
+			return indicator.SwingDetector(input, swingStrength, tickFilter);
+		}
+	}
+}
+
+namespace NinjaTrader.NinjaScript.Strategies
+{
+	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
+	{
+		public Indicators.ninpai.SwingDetector SwingDetector(int swingStrength, int tickFilter)
+		{
+			return indicator.SwingDetector(Input, swingStrength, tickFilter);
+		}
+
+		public Indicators.ninpai.SwingDetector SwingDetector(ISeries<double> input , int swingStrength, int tickFilter)
+		{
+			return indicator.SwingDetector(input, swingStrength, tickFilter);
+		}
+	}
+}
+
+#endregion
