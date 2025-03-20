@@ -287,6 +287,15 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				UseSetupN4BDown = false;
 				// Setup ALPHA Down
 				UseSetupALPHADown = false;
+				
+				// Setup PullbackV3Bup
+				UsePullbackV3Bup = false;
+				PullbackV3BupOffset1 = 0;
+				
+				// Setup PullbackV3Bdown
+				UsePullbackV3Bdown = false;
+				PullbackV3BdownOffset1 = 0;
+
             }
             else if (State == State.Configure)
             {
@@ -1004,6 +1013,46 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		
 		// ############################################## Use Setup ALPHA DOWN ################################################################# //
 		
+		// ############################################## Use Setup UsePullbackV3Bup  ################################################################# //
+		//
+		private bool IsPullbackV3BupPattern()
+		{
+			if (CurrentBar < 2)
+				return false;
+				
+			// Vérifier si au moins une des barres 1 ou 2 fait un high supérieur à STD1 Upper + offset
+			bool highCondition = High[1] > (Values[3][1] + PullbackV3BupOffset1 * TickSize) || 
+								High[2] > (Values[3][2] + PullbackV3BupOffset1 * TickSize);
+			
+			// Vérifier si au moins une des barres 0, 1 ou 2 fait un low inférieur à STD1 Upper
+			bool lowCondition = Low[0] < Values[3][0] || Low[1] < Values[3][1] || Low[2] < Values[3][2];
+			
+			// Vérifier si Close0 est supérieur à Close et Open des barres 1 et 2
+			bool closeCondition = Close[0] > Close[1] && Close[0] > Open[1] && 
+								Close[0] > Close[2] && Close[0] > Open[2];
+			
+			return highCondition && lowCondition && closeCondition;
+		}
+		
+		private bool IsPullbackV3BdownPattern()
+		{
+			if (CurrentBar < 2)
+				return false;
+				
+			// Vérifier si au moins une des barres 1 ou 2 fait un low inférieur à STD1 Lower - offset
+			bool lowCondition = Low[1] < (Values[4][1] - PullbackV3BdownOffset1 * TickSize) || 
+								Low[2] < (Values[4][2] - PullbackV3BdownOffset1 * TickSize);
+			
+			// Vérifier si au moins une des barres 0, 1 ou 2 fait un high supérieur à STD1 Lower
+			bool highCondition = High[0] > Values[4][0] || High[1] > Values[4][1] || High[2] > Values[4][2];
+			
+			// Vérifier si Close0 est inférieur à Close et Open des barres 1 et 2
+			bool closeCondition = Close[0] < Close[1] && Close[0] < Open[1] && 
+								Close[0] < Close[2] && Close[0] < Open[2];
+			
+			return lowCondition && highCondition && closeCondition;
+		}
+		// ############################################## UsePullbackV3Bdown ################################################################# //
 		// ############################################## ShouldDrawUpArrow ################################################################# //
         private bool ShouldDrawUpArrow()
         {
@@ -1172,6 +1221,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				(!UseSetupU4BUP || IsSetupU4BUPPattern()) &&
 				(!UseSetupN4BUP || IsSetupN4BUPPattern()) &&
 				(!UseSetupALPHAUP || IsSetupALPHAUPPattern()) &&
+				(!UsePullbackV3Bup || IsPullbackV3BupPattern()) &&
 				(!EnableDistanceFromVWAPCondition || (distanceInTicks >= MinDistanceFromVWAP && distanceInTicks <= MaxDistanceFromVWAP));
 
             double openCloseDiff = Math.Abs(Open[0] - Close[0]) / TickSize;
@@ -1415,6 +1465,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				(!UseSetupU4BDown || IsSetupU4BDownPattern()) &&
 				(!UseSetupN4BDown || IsSetupN4BDownPattern()) &&
 				(!UseSetupALPHADown || IsSetupALPHADownPattern()) &&
+				(!UsePullbackV3Bdown || IsPullbackV3BdownPattern()) &&
 				(!EnableDistanceFromVWAPCondition || (distanceInTicks >= MinDistanceFromVWAP && distanceInTicks <= MaxDistanceFromVWAP)); 
 
             double openCloseDiff = Math.Abs(Open[0] - Close[0]) / TickSize;
@@ -2460,6 +2511,28 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		[NinjaScriptProperty]
 		[Display(Name = "Use SetupALPHADown", Description = "Activer la combinaison des patterns V3B, V3BV2, U4B ou N4B pour les signaux de vente", Order = 2, GroupName = "Setup ALPHAUP")]
 		public bool UseSetupALPHADown { get; set; }
+		// ############################ Setup ALPHA DOWN ######################################### //
+		// ############################ Setup PullbackV3Bup ######################################### //
+		[NinjaScriptProperty]
+		[Display(Name = "Use PullbackV3Bup", Description = "Activer le pattern de pullback V3B pour les signaux UP", Order = 1, GroupName = "Setup PullbackV3Bup")]
+		public bool UsePullbackV3Bup { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name = "PullbackV3Bup Offset1", Description = "Offset en ticks au-dessus de STD1 Upper", Order = 2, GroupName = "Setup PullbackV3Bup")]
+		public int PullbackV3BupOffset1 { get; set; }
+		
+		// ############################ Setup PullbackV3Bdown ######################################### //
+		[NinjaScriptProperty]
+		[Display(Name = "Use PullbackV3Bdown", Description = "Activer le pattern de pullback V3B pour les signaux DOWN", Order = 3, GroupName = "Setup PullbackV3Bup")]
+		public bool UsePullbackV3Bdown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name = "PullbackV3Bdown Offset1", Description = "Offset en ticks en-dessous de STD1 Lower", Order = 4, GroupName = "Setup PullbackV3Bup")]
+		public int PullbackV3BdownOffset1 { get; set; }
+		
+		
 		
         #endregion
     }
