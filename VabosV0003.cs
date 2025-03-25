@@ -263,16 +263,15 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				UseSetupV3B = false;
 				UseSetupV3BOC = false;
 				UseSetupV3BHL = false;
+				IgnoreCondition1V3BOC = false;
+				IgnoreCondition1V3BHL = false;
+				
 				// Setup D3BHLup
 				UseSetupD3BHLup = false;
 				UseSetupD3BHLup1 = false;
 				UseSetupD3BHLup2 = false;
 				
-				// Setup U4BUP
-				UseSetupU4BUP = false;
-				SetupU4BUPOffset = 0;
-				// Setup N4BUP
-				UseSetupN4BUP = false;
+				// Setup ALPHAUP
 				UseSetupALPHAUP = false;
 				
 				// Setup DOWN
@@ -282,6 +281,14 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				UseSetupD3BHLdown = false;
 				UseSetupD3BHLdown1 = false;
 				UseSetupD3BHLdown2 = false;
+				
+				// Nouveaux setups D3BOC
+				UseSetupD3BOCup = false;
+				UseSetupD3BOCup1 = false;
+				UseSetupD3BOCup2 = false;
+				UseSetupD3BOCdown = false;
+				UseSetupD3BOCdown1 = false;
+				UseSetupD3BOCdown2 = false;
             }
             else if (State == State.Configure)
             {
@@ -854,8 +861,8 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		}
 		
 		// ############################################## UseThreeBarBreakout ################################################################# //
-		// ############################################## Use Setup ALPHA ################################################################# //
-		// ############################################## Use Setup V3B ################################################################# //
+		
+		// ############################################## Use Setup V3B UP ################################################################# //
 		private bool IsSetupV3BOCPattern()
 		{
 			if (CurrentBar < 2)
@@ -870,7 +877,12 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			bool condition4 = Close[1] < Close[2] || Open[1] < Close[2];
 			bool condition5 = Close[1] < Open[0] || Open[1] < Open[0];
 			
-			return condition1 && condition2 && condition3 && condition4 && condition5;
+			// return condition1 && condition2 && condition3 && condition4 && condition5;
+			if (IgnoreCondition1V3BOC)
+				//
+				return condition2 && condition3 && condition4 && condition5;
+			else
+				return condition1 && condition2 && condition3 && condition4 && condition5;
 		}
 		
 		private bool IsSetupV3BHLPattern()
@@ -887,9 +899,61 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			bool condition4 = Low[1] < Low[2];
 			bool condition5 = Low[1] < Low[0];
 			
-			return condition1 && condition2 && condition3 && condition4 && condition5;
+			// return condition1 && condition2 && condition3 && condition4 && condition5;
+			if (IgnoreCondition1V3BHL)
+				//
+				return condition2 && condition3 && condition4 && condition5;
+			else
+				return condition1 && condition2 && condition3 && condition4 && condition5;
 		}
-		// ############################################## Use Setup V3B ################################################################# //
+		// ############################################## Use Setup V3B UP ################################################################# //
+		
+		// ############################################## Use Setup V3B DOWN ################################################################# //
+		private bool IsSetupV3BOCPatternDown()
+		{
+			if (CurrentBar < 2)
+				return false;
+				
+			// Conditions communes pour la version DOWN
+			bool condition1 = Open[2] < Close[2];
+			bool condition2 = Close[0] < Open[2];
+			
+			// Conditions spécifiques au pattern OC pour DOWN
+			bool condition3 = Open[1] > Open[2] && Close[1] > Open[2];
+			bool condition4 = Close[1] > Close[2] || Open[1] > Close[2];
+			bool condition5 = Close[1] > Open[0] || Open[1] > Open[0];
+			
+			// return condition1 && condition2 && condition3 && condition4 && condition5;
+			if (IgnoreCondition1V3BOC)
+				return condition2 && condition3 && condition4 && condition5;
+			else
+				return condition1 && condition2 && condition3 && condition4 && condition5;
+		}
+		
+		private bool IsSetupV3BHLPatternDown()
+		{
+			if (CurrentBar < 2)
+				return false;
+				
+			// Conditions communes pour la version DOWN
+			bool condition1 = Open[2] < Close[2];
+			bool condition2 = Close[0] < Open[2];
+			
+			// Conditions spécifiques au pattern HL pour DOWN
+			bool condition3 = Low[1] > Low[2];
+			bool condition4 = High[1] > High[2];
+			bool condition5 = High[1] > High[0];
+			
+			// return condition1 && condition2 && condition3 && condition4 && condition5;
+			if (IgnoreCondition1V3BHL)
+				//
+				return condition2 && condition3 && condition4 && condition5;
+			else
+				return condition1 && condition2 && condition3 && condition4 && condition5;
+		}
+		
+		// ############################################## Use Setup V3B DOWN ################################################################# //
+		
 		// ############################################## Use Setup D3BHLup ################################################################# //
 		private bool IsSetupD3BHLup1Pattern()
 		{
@@ -923,78 +987,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		
 		// ############################################## Use Setup D3BHLup ################################################################# //
 		
-		private bool IsSetupU4BUPPattern()
-		{
-			if (CurrentBar < 3)
-				return false;
-				
-			bool condition1 = Close[0] > (High[3] + (SetupU4BUPOffset * TickSize));
-			bool condition2 = Low[0] > Low[1];
-			bool condition3 = Low[0] > Low[2];
-			bool condition4 = Low[3] > Low[1];
-			bool condition5 = Low[3] > Low[2];
-			
-			return condition1 && condition2 && condition3 && condition4 && condition5;
-		}
 		
-		private bool IsSetupN4BUPPattern()
-		{
-			if (CurrentBar < 3)
-				return false;
-				
-			bool condition1 = Close[3] > Open[3];
-			bool condition2 = Close[2] > Open[2];
-			bool condition3 = Close[2] > Close[3];
-			bool condition4 = Close[1] < Open[1];
-			bool condition5 = Close[0] > High[1];
-			bool condition6 = Close[0] > High[2];
-			bool condition7 = Close[0] > High[3];
-			
-			return condition1 && condition2 && condition3 && condition4 && condition5 && condition6 && condition7;
-		}
-		
-		private bool IsSetupALPHAUPPattern()
-		{
-			// Si l'un des 4 patterns est détecté, alors ALPHAUP est vrai
-			return IsSetupD3BHLup1Pattern() || IsSetupD3BHLup2Pattern() || IsSetupV3BOCPattern() || IsSetupV3BHLPattern() || IsSetupU4BUPPattern() || IsSetupN4BUPPattern();
-		}
-		
-		// ############################################## Use Setup V3B DOWN ################################################################# //
-		private bool IsSetupV3BOCPatternDown()
-		{
-			if (CurrentBar < 2)
-				return false;
-				
-			// Conditions communes pour la version DOWN
-			bool condition1 = Open[2] < Close[2];
-			bool condition2 = Close[0] < Open[2];
-			
-			// Conditions spécifiques au pattern OC pour DOWN
-			bool condition3 = Open[1] > Open[2] && Close[1] > Open[2];
-			bool condition4 = Close[1] > Close[2] || Open[1] > Close[2];
-			bool condition5 = Close[1] > Open[0] || Open[1] > Open[0];
-			
-			return condition1 && condition2 && condition3 && condition4 && condition5;
-		}
-		
-		private bool IsSetupV3BHLPatternDown()
-		{
-			if (CurrentBar < 2)
-				return false;
-				
-			// Conditions communes pour la version DOWN
-			bool condition1 = Open[2] < Close[2];
-			bool condition2 = Close[0] < Open[2];
-			
-			// Conditions spécifiques au pattern HL pour DOWN
-			bool condition3 = Low[1] > Low[2];
-			bool condition4 = High[1] > High[2];
-			bool condition5 = High[1] > High[0];
-			
-			return condition1 && condition2 && condition3 && condition4 && condition5;
-		}
-		
-		// ############################################## Use Setup V3B DOWN ################################################################# //
 		// ############################################## Use Setup D3BHL DOWN ################################################################# //
 		
 		private bool IsSetupD3BHLdown1Pattern()
@@ -1028,7 +1021,77 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		}
 		
 		// ############################################## Use Setup D3BHL DOWN ################################################################# //
+		// ############################################## Use Setup D3BOC UP ################################################################# //
+		private bool IsSetupD3BOCup1Pattern()
+		{
+			if (CurrentBar < 2)
+				return false;
+				
+			bool condition1 = Open[2] > Open[1];
+			bool condition2 = Close[2] < Close[1];
+			bool condition3 = Close[0] > Open[2];
+			
+			return condition1 && condition2 && condition3;
+		}
+		
+		private bool IsSetupD3BOCup2Pattern()
+		{
+			if (CurrentBar < 2)
+				return false;
+				
+			bool condition1 = Open[2] < Open[1];
+			bool condition2 = Close[2] > Close[1];
+			bool condition3 = Close[0] > Open[1];
+			
+			return condition1 && condition2 && condition3;
+		}
+		
+		private bool IsSetupD3BOCupPattern()
+		{
+			// Le setup principal vérifie si l'un des deux sous-setups est valide
+			return IsSetupD3BOCup1Pattern() || IsSetupD3BOCup2Pattern();
+		}
+		
+		private bool IsSetupD3BOCdown1Pattern()
+		{
+			if (CurrentBar < 2)
+				return false;
+				
+			bool condition1 = Close[2] > Close[1];
+			bool condition2 = Open[2] < Open[1];
+			bool condition3 = Close[0] < Close[2];
+			
+			return condition1 && condition2 && condition3;
+		}
+		
+		private bool IsSetupD3BOCdown2Pattern()
+		{
+			if (CurrentBar < 2)
+				return false;
+				
+			bool condition1 = Close[2] < Close[1];
+			bool condition2 = Open[2] > Open[1];
+			bool condition3 = Close[0] < Close[1];
+			
+			return condition1 && condition2 && condition3;
+		}
+		
+		private bool IsSetupD3BOCdownPattern()
+		{
+			// Le setup principal vérifie si l'un des deux sous-setups est valide
+			return IsSetupD3BOCdown1Pattern() || IsSetupD3BOCdown2Pattern();
+		}
+		
+		
+		// ############################################## Use Setup D3BOC DOWN ################################################################# //
 		// ############################################## Use Setup ALPHA ################################################################# //
+		private bool IsSetupALPHAUPPattern()
+		{
+			// Si l'un des 4 patterns est détecté, alors ALPHAUP est vrai
+			return IsSetupD3BHLup1Pattern() || IsSetupD3BHLup2Pattern() || IsSetupV3BOCPattern() || IsSetupV3BHLPattern();
+		}
+		// ############################################## Use Setup ALPHA ################################################################# //
+		
 		
 		// ############################################## ShouldDrawUpArrow ################################################################# //
         private bool ShouldDrawUpArrow()
@@ -1196,11 +1259,12 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				(!UseSetupV3B || IsSetupV3BOCPattern() || IsSetupV3BHLPattern()) &&
 				(!UseSetupV3BOC || IsSetupV3BOCPattern()) &&
 				(!UseSetupV3BHL || IsSetupV3BHLPattern()) &&
-				(!UseSetupU4BUP || IsSetupU4BUPPattern()) &&
-				(!UseSetupN4BUP || IsSetupN4BUPPattern()) &&
 				(!UseSetupD3BHLup || IsSetupD3BHLupPattern()) &&
 				(!UseSetupD3BHLup1 || IsSetupD3BHLup1Pattern()) &&
 				(!UseSetupD3BHLup2 || IsSetupD3BHLup2Pattern()) &&
+				(!UseSetupD3BOCup || IsSetupD3BOCupPattern()) &&
+				(!UseSetupD3BOCup1 || IsSetupD3BOCup1Pattern()) &&
+				(!UseSetupD3BOCup2 || IsSetupD3BOCup2Pattern()) &&
 				(!UseSetupALPHAUP || IsSetupALPHAUPPattern()) &&
 				(!EnableDistanceFromVWAPCondition || (distanceInTicks >= MinDistanceFromVWAP && distanceInTicks <= MaxDistanceFromVWAP));
 
@@ -1446,6 +1510,9 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				(!UseSetupD3BHLdown || IsSetupD3BHLdownPattern()) &&
 				(!UseSetupD3BHLdown1 || IsSetupD3BHLdown1Pattern()) &&
 				(!UseSetupD3BHLdown2 || IsSetupD3BHLdown2Pattern()) &&
+				(!UseSetupD3BOCdown || IsSetupD3BOCdownPattern()) &&
+				(!UseSetupD3BOCdown1 || IsSetupD3BOCdown1Pattern()) &&
+				(!UseSetupD3BOCdown2 || IsSetupD3BOCdown2Pattern()) &&
 				(!EnableDistanceFromVWAPCondition || (distanceInTicks >= MinDistanceFromVWAP && distanceInTicks <= MaxDistanceFromVWAP)); 
 
             double openCloseDiff = Math.Abs(Open[0] - Close[0]) / TickSize;
@@ -2401,82 +2468,98 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		
 		// ############################ Setup V3B UP ######################################### //
 		[NinjaScriptProperty]
-		[Display(Name = "Use SetupV3B", Description = "Activer le pattern de setup V3B pour les signaux UP", Order = 1, GroupName = "Setup V3B UP")]
+		[Display(Name = "Use SetupV3B", Description = "Activer le pattern de setup V3B pour les signaux UP", Order = 1, GroupName = "20.01_Setup V3B UP")]
 		public bool UseSetupV3B { get; set; }
 		
 		[NinjaScriptProperty]
-		[Display(Name = "Use SetupV3BOC", Description = "Activer le pattern de setup V3B basé sur Open/Close", Order = 2, GroupName = "Setup V3B UP")]
+		[Display(Name = "Use SetupV3BOC", Description = "Activer le pattern de setup V3B basé sur Open/Close", Order = 2, GroupName = "20.01_Setup V3B UP")]
 		public bool UseSetupV3BOC { get; set; }
 		
 		[NinjaScriptProperty]
-		[Display(Name = "Use SetupV3BHL", Description = "Activer le pattern de setup V3B basé sur High/Low", Order = 3, GroupName = "Setup V3B UP")]
+		[Display(Name = "Use SetupV3BHL", Description = "Activer le pattern de setup V3B basé sur High/Low", Order = 3, GroupName = "20.01_Setup V3B UP")]
 		public bool UseSetupV3BHL { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Ignore Condition1 V3BOC", Description = "Ignorer la condition1 (Open[2] > Close[2]) dans le pattern V3BOC", Order = 4, GroupName = "20.01_Setup V3B UP")]
+		public bool IgnoreCondition1V3BOC { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Ignore Condition1 V3BHL", Description = "Ignorer la condition1 (Open[2] > Close[2]) dans le pattern V3BHL", Order = 5, GroupName = "20.01_Setup V3B UP")]
+		public bool IgnoreCondition1V3BHL { get; set; }
 
 		// ############################ Setup V3B UP ######################################### //
-		
-		// ############################ Setup U4BUP ######################################### //
-		[NinjaScriptProperty]
-		[Display(Name = "Use SetupU4BUP", Description = "Activer le pattern de setup U4BUP pour les signaux d'achat", Order = 1, GroupName = "Setup U4BUP")]
-		public bool UseSetupU4BUP { get; set; }
-		
-		[NinjaScriptProperty]
-		[Range(0, int.MaxValue)]
-		[Display(Name = "SetupU4BUPOffset", Description = "Offset en ticks pour Close0 > High3 + offset", Order = 2, GroupName = "Setup U4BUP")]
-		public int SetupU4BUPOffset { get; set; }
-		// ############################ Setup U4BUP ######################################### //
-		// ############################ Setup U4BUP ######################################### //
-		[NinjaScriptProperty]
-		[Display(Name = "Use SetupN4BUP", Description = "Activer le pattern de setup N4BUP pour les signaux d'achat", Order = 1, GroupName = "Setup N4BUP")]
-		public bool UseSetupN4BUP { get; set; }
-		// ############################ Setup U4BUP ######################################### //
-		// ############################ Setup U4BUP ######################################### //
-		[NinjaScriptProperty]
-		[Display(Name = "Use SetupALPHAUP", Description = "Activer la combinaison des patterns V3B, V3BV2, U4BUP ou N4BUP pour les signaux d'achat", Order = 1, GroupName = "Setup ALPHAUP")]
-		public bool UseSetupALPHAUP { get; set; }
-		// ############################ Setup U4BUP ######################################### //
-		
-		// ############################ Setup D3BHL UP ######################################### //
-		[NinjaScriptProperty]
-		[Display(Name = "Use Setup D3BHLup", Description = "Activer la combinaison des patterns D3BHLup1 et D3BHLup2 pour les signaux d'achat", Order = 1, GroupName = "Setup D3BHL UP")]
-		public bool UseSetupD3BHLup { get; set; }
-		
-		[NinjaScriptProperty]
-		[Display(Name = "Use Setup D3BHLup1", Description = "Activer le pattern D3BHLup1 (High2>High1, Low2<Low1, Close0>High2)", Order = 2, GroupName = "Setup D3BHL UP")]
-		public bool UseSetupD3BHLup1 { get; set; }
-		
-		[NinjaScriptProperty]
-		[Display(Name = "Use Setup D3BHLup2", Description = "Activer le pattern D3BHLup2 (High2<High1, Low2<Low1, Close0>High1)", Order = 3, GroupName = "Setup D3BHL UP")]
-		public bool UseSetupD3BHLup2 { get; set; }
-		// ############################ Setup D3BHL UP ######################################### //
-		
-		
 		// ############################ Setup V3B DOWN ######################################### //
 		[NinjaScriptProperty]
-		[Display(Name = "Use SetupV3BDown", Description = "Activer le pattern de setup V3B pour les signaux DOWN", Order = 1, GroupName = "Setup V3B DOWN")]
+		[Display(Name = "Use SetupV3BDown", Description = "Activer le pattern de setup V3B pour les signaux DOWN", Order = 1, GroupName = "20.02_Setup V3B DOWN")]
 		public bool UseSetupV3BDown { get; set; }
 		
 		[NinjaScriptProperty]
-		[Display(Name = "Use SetupV3BOCDown", Description = "Activer le pattern de setup V3B basé sur Open/Close pour DOWN", Order = 2, GroupName = "Setup V3B DOWN")]
+		[Display(Name = "Use SetupV3BOCDown", Description = "Activer le pattern de setup V3B basé sur Open/Close pour DOWN", Order = 2, GroupName = "20.02_Setup V3B DOWN")]
 		public bool UseSetupV3BOCDown { get; set; }
 		
 		[NinjaScriptProperty]
-		[Display(Name = "Use SetupV3BHLDown", Description = "Activer le pattern de setup V3B basé sur High/Low pour DOWN", Order = 3, GroupName = "Setup V3B DOWN")]
+		[Display(Name = "Use SetupV3BHLDown", Description = "Activer le pattern de setup V3B basé sur High/Low pour DOWN", Order = 3, GroupName = "20.02_Setup V3B DOWN")]
 		public bool UseSetupV3BHLDown { get; set; }
 		// ############################ Setup V3B DOWN ######################################### //
+		
+		// ############################ Setup D3BHL UP ######################################### //
+		[NinjaScriptProperty]
+		[Display(Name = "Use Setup D3BHLup", Description = "Activer la combinaison des patterns D3BHLup1 et D3BHLup2 pour les signaux d'achat", Order = 1, GroupName = "21.01_Setup D3BHL UP")]
+		public bool UseSetupD3BHLup { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Setup D3BHLup1", Description = "Activer le pattern D3BHLup1 (High2>High1, Low2<Low1, Close0>High2)", Order = 2, GroupName = "21.01_Setup D3BHL UP")]
+		public bool UseSetupD3BHLup1 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Setup D3BHLup2", Description = "Activer le pattern D3BHLup2 (High2<High1, Low2<Low1, Close0>High1)", Order = 3, GroupName = "21.01_Setup D3BHL UP")]
+		public bool UseSetupD3BHLup2 { get; set; }
+		// ############################ Setup D3BHL UP ######################################### //
 		// ############################ Setup D3BHL DOWN ######################################### //
 		[NinjaScriptProperty]
-		[Display(Name = "Use Setup D3BHLdown", Description = "Activer la combinaison des patterns D3BHLdown1 et D3BHLdown2 pour les signaux de vente", Order = 4, GroupName = "Setup D3BHL DOWN")]
+		[Display(Name = "Use Setup D3BHLdown", Description = "Activer la combinaison des patterns D3BHLdown1 et D3BHLdown2 pour les signaux de vente", Order = 4, GroupName = "21.02_Setup D3BHL DOWN")]
 		public bool UseSetupD3BHLdown { get; set; }
 		
 		[NinjaScriptProperty]
-		[Display(Name = "Use Setup D3BHLdown1", Description = "Activer le pattern D3BHLdown1 (Low2<Low1, High2>High1, Close0<Low2)", Order = 5, GroupName = "Setup D3BHL DOWN")]
+		[Display(Name = "Use Setup D3BHLdown1", Description = "Activer le pattern D3BHLdown1 (Low2<Low1, High2>High1, Close0<Low2)", Order = 5, GroupName = "21.02_Setup D3BHL DOWN")]
 		public bool UseSetupD3BHLdown1 { get; set; }
 		
 		[NinjaScriptProperty]
-		[Display(Name = "Use Setup D3BHLdown2", Description = "Activer le pattern D3BHLdown2 (Low2>Low1, High2>High1, Close0<Low1)", Order = 6, GroupName = "Setup D3BHL DOWN")]
+		[Display(Name = "Use Setup D3BHLdown2", Description = "Activer le pattern D3BHLdown2 (Low2>Low1, High2>High1, Close0<Low1)", Order = 6, GroupName = "21.02_Setup D3BHL DOWN")]
 		public bool UseSetupD3BHLdown2 { get; set; }
 		// ############################ Setup D3BHL DOWN ######################################### //
+		// ############################ Setup D3BOC UP ######################################### //
+		[NinjaScriptProperty]
+		[Display(Name = "Use Setup D3BOCup", Description = "Activer la combinaison des patterns D3BOCup1 et D3BOCup2 pour les signaux d'achat", Order = 1, GroupName = "22.01_Setup D3BOC UP")]
+		public bool UseSetupD3BOCup { get; set; }
 		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Setup D3BOCup1", Description = "Activer le pattern D3BOCup1 (Open2>Open1, Close2<Close1, Close0>Open2)", Order = 2, GroupName = "22.01_Setup D3BOC UP")]
+		public bool UseSetupD3BOCup1 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Setup D3BOCup2", Description = "Activer le pattern D3BOCup2 (Open2<Open1, Close2>Close1, Close0>Open1)", Order = 3, GroupName = "22.01_Setup D3BOC UP")]
+		public bool UseSetupD3BOCup2 { get; set; }
+		// ############################ Setup D3BOC UP ######################################### //
+		// ############################ Setup D3BOC DOWN ######################################### //
+		[NinjaScriptProperty]
+		[Display(Name = "Use Setup D3BOCdown", Description = "Activer la combinaison des patterns D3BOCdown1 et D3BOCdown2 pour les signaux de vente", Order = 1, GroupName = "22.02_Setup D3BOC DOWN")]
+		public bool UseSetupD3BOCdown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Setup D3BOCdown1", Description = "Activer le pattern D3BOCdown1 (Close2>Close1, Open2<Open1, Close0<Close2)", Order = 2, GroupName = "22.02_Setup D3BOC DOWN")]
+		public bool UseSetupD3BOCdown1 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Setup D3BOCdown2", Description = "Activer le pattern D3BOCdown2 (Close2<Close1, Open2>Open1, Close0<Close1)", Order = 3, GroupName = "22.02_Setup D3BOC DOWN")]
+		public bool UseSetupD3BOCdown2 { get; set; }
+		// ############################ Setup D3BOC DOWN ######################################### //
+		
+		// ############################ Setup ALPHAUP ######################################### //
+		[NinjaScriptProperty]
+		[Display(Name = "Use SetupALPHAUP", Description = "Activer la combinaison des patterns V3B, V3BV2, U4BUP ou N4BUP pour les signaux d'achat", Order = 1, GroupName = "Setup ALPHAUP")]
+		public bool UseSetupALPHAUP { get; set; }
+		// ############################ Setup ALPHAUP ######################################### //
 		
         #endregion
     }
