@@ -1565,7 +1565,6 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			bool showUpArrow = false; // dummy variable nécessaire pour la méthode
 			ApplyIBLogic(ref showUpArrow, ref showDownArrow);
 			
-			
 			return showDownArrow;
         }
         
