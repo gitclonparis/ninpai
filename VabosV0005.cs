@@ -300,6 +300,10 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				UseSetupU4BDown = false;
 				UseSetupU4BOCDown = false;
 				UseSetupU4BHLDown = false;
+				UseMaxHigh3 = false;
+				High3OffsetTicksUp = 0;
+				UseMinLow3 = false;
+				Low3OffsetTicksDown = 0;
 				
             }
             else if (State == State.Configure)
@@ -1039,7 +1043,19 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			if (CurrentBar < 3)
 				return false;
 			
-			double high3 = Math.Max(Open[3], Close[3]);
+			double high3;
+			if (UseMaxHigh3)
+			{
+				// Utiliser directement la valeur High[3] avec l'offset en ticks
+				high3 = High[3];
+			}
+			else
+			{
+				// Comportement original: utiliser le maximum entre Open et Close
+				high3 = Math.Max(Open[3], Close[3]);
+			}
+			
+			// double high3 = Math.Max(Open[3], Close[3]);
 			double high2 = Math.Max(Open[2], Close[2]);
 			double high1 = Math.Max(Open[1], Close[1]);
 			double high0 = Math.Max(Open[0], Close[0]);
@@ -1050,7 +1066,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			
 			bool condition1 = high2 < high3 && high1 < high3;
 			bool condition2 = low2 < low3 && low1 < low3 && low2 < low0 && low1 < low0;
-			bool condition3 = high0 > high3;
+			bool condition3 = high0 > high3 + (High3OffsetTicksUp * TickSize);
 			
 			return condition1 && condition2 && condition3;
 		}
@@ -1068,10 +1084,11 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			double low2 = Low[2];
 			double low1 = Low[1];
 			double low0 = Low[0];
+			double Close0 = Close[0];
 			
 			bool condition1 = high2 < high3 && high1 < high3;
 			bool condition2 = low2 < low3 && low1 < low3 && low2 < low0 && low1 < low0;
-			bool condition3 = high0 > high3;
+			bool condition3 = Close0 > high3 + (High3OffsetTicksUp * TickSize);
 			
 			return condition1 && condition2 && condition3;
 		}
@@ -1088,18 +1105,30 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			if (CurrentBar < 3)
 				return false;
 			
+			double low3;
+			if (UseMinLow3)
+			{
+				// Utiliser directement la valeur Low[3] avec l'offset en ticks
+				low3 = Low[3];
+			}
+			else
+			{
+				// Comportement original: utiliser le minimum entre Open et Close
+				low3 = Math.Min(Open[3], Close[3]);
+			}
+			
 			double high3 = Math.Max(Open[3], Close[3]);
 			double high2 = Math.Max(Open[2], Close[2]);
 			double high1 = Math.Max(Open[1], Close[1]);
 			double high0 = Math.Max(Open[0], Close[0]);
-			double low3 = Math.Min(Open[3], Close[3]);
+			// double low3 = Math.Min(Open[3], Close[3]);
 			double low2 = Math.Min(Open[2], Close[2]);
 			double low1 = Math.Min(Open[1], Close[1]);
 			double low0 = Math.Min(Open[0], Close[0]);
 			
 			bool condition1 = low2 > low3 && low1 > low3;
 			bool condition2 = high2 > high3 && high1 > high3 && high2 > high0 && high1 > high0;
-			bool condition3 = low0 < low3;
+			bool condition3 = low0 < low3 - (Low3OffsetTicksDown * TickSize);
 			
 			return condition1 && condition2 && condition3;
 		}
@@ -1117,10 +1146,11 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 			double low2 = Low[2];
 			double low1 = Low[1];
 			double low0 = Low[0];
+			double close0 = Close[0];
 			
 			bool condition1 = low2 > low3 && low1 > low3;
 			bool condition2 = high2 > high3 && high1 > high3 && high2 > high0 && high1 > high0;
-			bool condition3 = low0 < low3;
+			bool condition3 = close0 < low3 - (Low3OffsetTicksDown * TickSize);
 			
 			return condition1 && condition2 && condition3;
 		}
@@ -2697,6 +2727,17 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		public bool UseSetupU4BHLup { get; set; }
 		
 		[NinjaScriptProperty]
+		[Display(Name = "Use Max High3 for U4BOCup", Description = "Utiliser High[3] au lieu de Max(Open[3],Close[3]) pour la condition de cassure", Order = 4, GroupName = "24.01_Setup U4B UP")]
+		public bool UseMaxHigh3 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 10)]
+		[Display(Name = "High3 Offset Ticks Up", Description = "Offset en ticks à ajouter à High[3]", Order = 5, GroupName = "24.01_Setup U4B UP")]
+		public int High3OffsetTicksUp { get; set; }
+		
+		
+		
+		[NinjaScriptProperty]
 		[Display(Name = "Use Setup U4BDown", Description = "Activer le setup U4B pour les signaux DOWN", Order = 1, GroupName = "24.02_Setup U4B DOWN")]
 		public bool UseSetupU4BDown { get; set; }
 		
@@ -2707,6 +2748,15 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		[NinjaScriptProperty]
 		[Display(Name = "Use Setup U4BHLDown", Description = "Activer le pattern U4B basé sur High/Low pour DOWN", Order = 3, GroupName = "24.02_Setup U4B DOWN")]
 		public bool UseSetupU4BHLDown { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Min Low3 for U4BOCDown", Description = "Utiliser Low[3] au lieu de Min(Open[3],Close[3]) pour la condition de cassure", Order = 4, GroupName = "24.02_Setup U4B DOWN")]
+		public bool UseMinLow3 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 10)]
+		[Display(Name = "Low3 Offset Ticks Down", Description = "Offset en ticks à soustraire de Low[3]", Order = 5, GroupName = "24.02_Setup U4B DOWN")]
+		public int Low3OffsetTicksDown { get; set; }
 		
 		// ############################ Setup UseSetupU4B ######################################### //
 		
