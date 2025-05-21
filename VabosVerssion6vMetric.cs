@@ -23,7 +23,7 @@ using NinjaTrader.NinjaScript.DrawingTools;
 
 namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
-    public class VabosV0006vMetric : Indicator
+    public class VabosVerssion6vMetric : Indicator
     {
 		
 		
@@ -82,7 +82,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             if (State == State.SetDefaults)
             {
                 Description = @"Indicateur BVA-Limusine combiné";
-                Name = "VabosV0006 Volumetique";
+                Name = "VabosVerssion6 Volumetique";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
