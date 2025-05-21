@@ -23,7 +23,7 @@ using NinjaTrader.NinjaScript.DrawingTools;
 
 namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
-    public class VabosV0005 : Indicator
+    public class VabosV0006vMetric : Indicator
     {
 		
 		
@@ -82,7 +82,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             if (State == State.SetDefaults)
             {
                 Description = @"Indicateur BVA-Limusine combiné";
-                Name = "VabosV0005";
+                Name = "VabosV0006 Volumetique";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
@@ -305,16 +305,88 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				UseMinLow3 = false;
 				Low3OffsetTicksDown = 0;
 				
-				// Valeurs par défaut pour RejetSt1
-				UseRejetSt1UP = false;
-				UseRangeOutsideVAst1UP = false;
-				RejetSt1UPNumberOfBars = 3;
-				RejetSt1UPMinimumPicTicks = 10;
+				// Ajouter ces lignes dans la section State.SetDefaults
+				UseOutStd1UP = false;
+				UseOpenForOutStd1UP = true;
+				UseCloseForOutStd1UP = false;
+				MinBarsOutStd1UP = 3;
+				MaxBarsOutStd1UP = 6;
 				
-				UseRejetSt1DOWN = false;
-				UseRangeOutsideVAst1DOWN = false;
-				RejetSt1DOWNNumberOfBars = 3;
-				RejetSt1DOWNMinimumPicTicks = 10;
+				UseOutStd1DOWN = false;
+				UseOpenForOutStd1DOWN = true;
+				UseCloseForOutStd1DOWN = false;
+				MinBarsOutStd1DOWN = 3;
+				MaxBarsOutStd1DOWN = 6;
+				
+				// Ajouter ces lignes dans la section State.SetDefaults
+				UsePullbackSimpleUP = false;
+				MinBarPullbackUP = 0;
+				MaxBarPullbackUP = 2;
+				
+				UsePullbackSimpleDOWN = false;
+				MinBarPullbackDOWN = 0;
+				MaxBarPullbackDOWN = 2;
+				
+				// 30.01 Volumetrique Barre 0
+				UseDeltaVbarre0up = false;
+				MinDeltaValueUP = 100;
+				UseDeltaVbarre0down = false;
+				MaxDeltaValueDOWN = -100;
+				
+				UseDeltaPercentBarre0up = false;
+				MinDeltaPercentUP = 5;
+				UseDeltaChangeBarre0up = false;
+				MinDeltaChangeUP = 100;
+				
+				UseDeltaPercentBarre0down = false;
+				MaxDeltaPercentDOWN = 5;
+				UseDeltaChangeBarre0down = false;
+				MaxDeltaChangeDOWN = 100;
+				
+				UsePOCbarre0UP = false;
+				POCOffsetTicksUP = 0;
+				UsePOCbarre0Down = false;  
+				POCOffsetTicksDOWN = 0;
+				
+				// Ajoutez ces lignes avec les autres initialisations :
+				UseDeltaVbarre1up = false;
+				MinDeltaValueUPB1 = 100;
+				UseDeltaPercentBarre1up = false;
+				MinDeltaPercentUPB1 = 5;
+				UseDeltaChangeBarre1up = false;
+				MinDeltaChangeUPB1 = 100;
+				
+				UseDeltaVbarre1down = false;
+				MaxDeltaValueDOWNB1 = -100;
+				UseDeltaPercentBarre1down = false;
+				MaxDeltaPercentDOWNB1 = 5;
+				UseDeltaChangeBarre1down = false;
+				MaxDeltaChangeDOWNB1 = 100;
+				
+				UsePOCbarre1UP = false;
+				POCOffsetTicksUPB1 = 0;
+				UsePOCbarre1Down = false;  
+				POCOffsetTicksDOWNB1 = 0;
+				
+				// Ajoutez ces lignes avec les autres initialisations :
+				UseDeltaVbarre2up = false;
+				MinDeltaValueUPB2 = 100;
+				UseDeltaPercentBarre2up = false;
+				MinDeltaPercentUPB2 = 5;
+				UseDeltaChangeBarre2up = false;
+				MinDeltaChangeUPB2 = 100;
+				
+				UseDeltaVbarre2down = false;
+				MaxDeltaValueDOWNB2 = -100;
+				UseDeltaPercentBarre2down = false;
+				MaxDeltaPercentDOWNB2 = 5;
+				UseDeltaChangeBarre2down = false;
+				MaxDeltaChangeDOWNB2 = 100;
+				
+				UsePOCbarre2UP = false;
+				POCOffsetTicksUPB2 = 0;
+				UsePOCbarre2Down = false;  
+				POCOffsetTicksDOWNB2 = 0;
 				
             }
             else if (State == State.Configure)
@@ -327,9 +399,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 VOL1 = VOL(Close);
                 VOLMA1 = VOLMA(Close, Convert.ToInt32(FperiodVol));
 				sessionIterator = new SessionIterator(Bars);
-				
 				vwap = OrderFlowVWAP(VWAPResolution.Standard, Bars.TradingHours, VWAPStandardDeviations.Three, 1, 2, 3);
-				
             }
         }
 
@@ -337,6 +407,46 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
         {
             if (CurrentBars[0] < 20)
                 return;
+			// ################# Volumetrique ###################
+			NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType barsType = Bars.BarsSeries.BarsType as NinjaTrader.NinjaScript.BarsTypes.VolumetricBarsType;
+			currentBarDelta = barsType.Volumes[CurrentBar].BarDelta;
+			if (barsType == null)
+				return;
+			// Update delta variables
+			currentBarDelta = barsType.Volumes[CurrentBar].BarDelta;
+			currentBarDeltaPercent = barsType.Volumes[CurrentBar].GetDeltaPercent();
+			
+			// Calculate delta change
+			if (CurrentBar > 0)
+				previousBarDelta = barsType.Volumes[CurrentBar - 1].BarDelta;
+			// Get POC for current bar
+			if (barsType != null)
+			{
+				maxVolumePocBarre0 = barsType.Volumes[CurrentBar].GetMaximumVolume(null, out pocPriceBarre0);
+			}
+			// ################# Volumetrique ###################
+			// ################# Volumetrique Barre 1 ################### (ajoutez après la section volumetrique de la barre 0)
+			if (CurrentBar > 0 && barsType != null)
+			{
+				currentBar1Delta = barsType.Volumes[CurrentBar - 1].BarDelta;
+				currentBar1DeltaPercent = barsType.Volumes[CurrentBar - 1].GetDeltaPercent();
+				
+				// Get POC for current bar-1
+				maxVolumePocBarre1 = barsType.Volumes[CurrentBar - 1].GetMaximumVolume(null, out pocPriceBarre1);
+			}
+			// ################# Volumetrique Barre 1 ###################
+			// ################# Volumetrique Barre 2 ################### (ajoutez après la section volumetrique de la barre 1)
+			if (CurrentBar > 1 && barsType != null)
+			{
+				currentBar2Delta = barsType.Volumes[CurrentBar - 2].BarDelta;
+				currentBar3Delta = barsType.Volumes[CurrentBar - 3].BarDelta;
+				currentBar2DeltaPercent = barsType.Volumes[CurrentBar - 2].GetDeltaPercent();
+				
+				// Get POC for current bar-2
+				maxVolumePocBarre2 = barsType.Volumes[CurrentBar - 2].GetMaximumVolume(null, out pocPriceBarre2);
+			}
+			// ################# Volumetrique Barre 2 ###################
+			
 			if (BarsInProgress != 0) return;
 			
 			UpdatePriorSessionBands();
@@ -1227,161 +1337,125 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		}
 		
 		// ############################################## Use Setup ALPHA ################################################################# //
-		// ############################################## RangeOutsideVAstd1UP ################################################################# //
-		// Méthode pour vérifier si les barres 3 à 5 sont toutes au-dessus du STD1 Upper avec un pic minimum
-		// private bool RangeOutsideVAstd1UP(int numberOfBars, double minimumPicTicks)
-		// {
-			// if (CurrentBar < numberOfBars)
-				// return false;
-		
-			// double std1Upper;
-			// double highestHigh = double.MinValue;
-			// bool allBarsAboveStd1 = true;
-			// for (int i = 3; i <= numberOfBars; i++)
-			// {
-				// std1Upper = Values[3][i];
-				// if (Open[i] <= std1Upper || Close[i] <= std1Upper)
-				// {
-					// allBarsAboveStd1 = false;
-					// break;
-				// }
-				// if (High[i] > highestHigh)
-				// {
-					// highestHigh = High[i];
-				// }
-			// }
-			// if (allBarsAboveStd1)
-			// {
-				// double std1UpperReference = Values[3][3]; // Utiliser STD1 Upper de la première barre comme référence
-				// double picDistanceInTicks = (highestHigh - std1UpperReference) / TickSize;
-				// return picDistanceInTicks >= minimumPicTicks;
-			// }
-			// return false;
-		// }
-		
-		private bool RangeOutsideVAstd1UP(int numberOfBars, double minimumPicTicks)
+		// ############################################## Use Setup 25.01 OutStd1UP ################################################################# //
+		private bool CheckBarsOutStd1UP()
 		{
-			if (CurrentBar < 5)  // Assurez-vous d'avoir au moins les barres 3, 4 et 5
-				return false;
-		
-			// Vérification que TOUS les Open et Close sont supérieurs à STD1 Upper
-			bool bar3Above = Open[3] > Values[3][3] && Close[3] > Values[3][3];
-			bool bar4Above = Open[4] > Values[3][4] && Close[4] > Values[3][4];
-			bool bar5Above = Open[5] > Values[3][5] && Close[5] > Values[3][5];
+			if (!UseOutStd1UP || !UseOpenForOutStd1UP && !UseCloseForOutStd1UP)
+				return true;
 			
-			// Toutes les barres doivent être au-dessus
-			bool allBarsAboveStd1 = bar3Above && bar4Above && bar5Above;
-			
-			if (!allBarsAboveStd1)
+			if (CurrentBar < MaxBarsOutStd1UP)
 				return false;
+			
+			int barsAboveStd1 = 0;
+			
+			for (int i = MinBarsOutStd1UP; i <= MaxBarsOutStd1UP; i++)
+			{
+				if (i > CurrentBar) continue;
 				
-			// Si toutes les barres sont au-dessus, vérifier la condition de pic
-			double highestHigh = Math.Max(High[3], Math.Max(High[4], High[5]));
-			double std1UpperReference = Values[3][3]; // Référence de la barre 3
-			double picDistanceInTicks = (highestHigh - std1UpperReference) / TickSize;
+				bool isBarAboveStd1 = false;
+				
+				// Vérifier les conditions Open et/ou Close
+				if (UseOpenForOutStd1UP && Open[i] > Values[3][i]) // Open au-dessus de STD1 Upper
+					isBarAboveStd1 = true;
+				
+				if (UseCloseForOutStd1UP && Close[i] > Values[3][i]) // Close au-dessus de STD1 Upper
+					isBarAboveStd1 = true;
+				
+				if ((UseOpenForOutStd1UP && UseCloseForOutStd1UP) && 
+					!(Open[i] > Values[3][i] && Close[i] > Values[3][i]))
+					isBarAboveStd1 = false; // Si les deux sont demandés, il faut que les deux soient au-dessus
+				
+				if (isBarAboveStd1)
+					barsAboveStd1++;
+			}
 			
-			return picDistanceInTicks >= minimumPicTicks;
+			// Vérifier que toutes les barres dans la plage sont au-dessus
+			return barsAboveStd1 == (MaxBarsOutStd1UP - MinBarsOutStd1UP + 1);
 		}
 		
-		// Méthode pour vérifier si les barres 3 à 5 sont toutes en-dessous du STD1 Lower avec un pic minimum
-		// private bool RangeOutsideVAstd1DOWN(int numberOfBars, double minimumPicTicks)
-		// {
-			// if (CurrentBar < numberOfBars)
-				// return false;
-			// double std1Lower;
-			// double lowestLow = double.MaxValue;
-			// bool allBarsBelowStd1 = true;
-			// for (int i = 3; i <= numberOfBars; i++)
-			// {
-				// std1Lower = Values[4][i];
-				// if (Open[i] >= std1Lower || Close[i] >= std1Lower)
-				// {
-					// allBarsBelowStd1 = false;
-					// break;
-				// }
-				// if (Low[i] < lowestLow)
-				// {
-					// lowestLow = Low[i];
-				// }
-			// }
-			// if (allBarsBelowStd1)
-			// {
-				// double std1LowerReference = Values[4][3]; // Utiliser STD1 Lower de la première barre comme référence
-				// double picDistanceInTicks = (std1LowerReference - lowestLow) / TickSize;
-				// return picDistanceInTicks >= minimumPicTicks;
-			// }
-			// return false;
-		// }
-		
-		private bool RangeOutsideVAstd1DOWN(int numberOfBars, double minimumPicTicks)
+		private bool CheckBarsOutStd1DOWN()
 		{
-			if (CurrentBar < 5)  // Assurez-vous d'avoir au moins les barres 3, 4 et 5
-				return false;
-		
-			bool bar3Below = Open[3] < Values[4][3] && Close[3] < Values[4][3];
-			bool bar4Below = Open[4] < Values[4][4] && Close[4] < Values[4][4];
-			bool bar5Below = Open[5] < Values[4][5] && Close[5] < Values[4][5];
-			bool allBarsBelowStd1 = bar3Below && bar4Below && bar5Below;
+			if (!UseOutStd1DOWN || !UseOpenForOutStd1DOWN && !UseCloseForOutStd1DOWN)
+				return true;
 			
-			if (!allBarsBelowStd1)
+			if (CurrentBar < MaxBarsOutStd1DOWN)
 				return false;
-			double lowestLow = Math.Min(Low[3], Math.Min(Low[4], Low[5]));
-			double std1LowerReference = Values[4][3]; // Référence de la barre 3
-			double picDistanceInTicks = (std1LowerReference - lowestLow) / TickSize;
 			
-			return picDistanceInTicks >= minimumPicTicks;
+			int barsBelowStd1 = 0;
+			
+			for (int i = MinBarsOutStd1DOWN; i <= MaxBarsOutStd1DOWN; i++)
+			{
+				if (i > CurrentBar) continue;
+				
+				bool isBarBelowStd1 = false;
+				
+				// Vérifier les conditions Open et/ou Close
+				if (UseOpenForOutStd1DOWN && Open[i] < Values[4][i]) // Open en dessous de STD1 Lower
+					isBarBelowStd1 = true;
+				
+				if (UseCloseForOutStd1DOWN && Close[i] < Values[4][i]) // Close en dessous de STD1 Lower
+					isBarBelowStd1 = true;
+				
+				if ((UseOpenForOutStd1DOWN && UseCloseForOutStd1DOWN) && 
+					!(Open[i] < Values[4][i] && Close[i] < Values[4][i]))
+					isBarBelowStd1 = false; // Si les deux sont demandés, il faut que les deux soient en dessous
+				
+				if (isBarBelowStd1)
+					barsBelowStd1++;
+			}
+			
+			// Vérifier que toutes les barres dans la plage sont en dessous
+			return barsBelowStd1 == (MaxBarsOutStd1DOWN - MinBarsOutStd1DOWN + 1);
 		}
 		
-		// ############################################## RangeOutsideVAstd1DOWN ################################################################# //
-		// ############################################## Use Setup IsRejetSt1UPPattern ################################################################# //
-		// Méthode pour vérifier le setup RejetSt1UP
-		private bool IsRejetSt1UPPattern()
+		
+		// ############################################## Use Setup 25.02 OutStd1DOWN ################################################################# //
+		// ############################################## Use Setup 25.03 Use Pullback Simple UP ################################################################# //
+		private bool CheckPullbackSimpleUP()
 		{
-			if (CurrentBar < 3)
+			if (!UsePullbackSimpleUP)
+				return true;
+			
+			// Vérifier que le range est valide
+			if (MinBarPullbackUP > MaxBarPullbackUP || CurrentBar < MaxBarPullbackUP)
 				return false;
 			
-			double std1Upper = Values[3][2]; // STD1 Upper pour la barre 2
+			// Vérifier si au moins une des barres dans le range a son extrémité inférieure à STD1 Upper
+			for (int i = MinBarPullbackUP; i <= MaxBarPullbackUP; i++)
+			{
+				// Pour UP, on cherche si le Low de la barre est inférieur à STD1 Upper
+				if (Low[i] < Values[3][i])
+					return true; // On a trouvé au moins une barre avec son Low sous STD1 Upper
+			}
 			
-			// Conditions à vérifier
-			bool condition1 = Open[2] > std1Upper; // Open2 supérieur à STD1 Upper
-			
-			// Une des Low des trois barres 0,1,2 doit être inférieure à STD1 Upper
-			bool condition2 = Low[0] < std1Upper || Low[1] < std1Upper || Low[2] < std1Upper;
-			
-			// Close0 doit être supérieur à Open2
-			bool condition3 = Close[0] > Open[2];
-			
-			// Vérifier la condition RangeOutsideVAstd1UP si activée
-			bool condition4 = !UseRangeOutsideVAst1UP || RangeOutsideVAstd1UP(RejetSt1UPNumberOfBars, RejetSt1UPMinimumPicTicks);
-			
-			return condition1 && condition2 && condition3 && condition4;
+			// Aucune barre n'a son Low sous STD1 Upper
+			return false;
 		}
 		
-		// Méthode pour vérifier le setup RejetSt1DOWN
-		private bool IsRejetSt1DOWNPattern()
+		private bool CheckPullbackSimpleDOWN()
 		{
-			if (CurrentBar < 3)
+			if (!UsePullbackSimpleDOWN)
+				return true;
+			
+			// Vérifier que le range est valide
+			if (MinBarPullbackDOWN > MaxBarPullbackDOWN || CurrentBar < MaxBarPullbackDOWN)
 				return false;
 			
-			double std1Lower = Values[4][2]; // STD1 Lower pour la barre 2
+			// Vérifier si au moins une des barres dans le range a son extrémité supérieure à STD1 Lower
+			for (int i = MinBarPullbackDOWN; i <= MaxBarPullbackDOWN; i++)
+			{
+				// Pour DOWN, on cherche si le High de la barre est supérieur à STD1 Lower
+				if (High[i] > Values[4][i])
+					return true; // On a trouvé au moins une barre avec son High au-dessus de STD1 Lower
+			}
 			
-			// Conditions à vérifier
-			bool condition1 = Open[2] < std1Lower; // Open2 inférieur à STD1 Lower
-			
-			// Une des High des trois barres 0,1,2 doit être supérieure à STD1 Lower
-			bool condition2 = High[0] > std1Lower || High[1] > std1Lower || High[2] > std1Lower;
-			
-			// Close0 doit être inférieur à Open2
-			bool condition3 = Close[0] < Open[2];
-			
-			// Vérifier la condition RangeOutsideVAstd1DOWN si activée
-			bool condition4 = !UseRangeOutsideVAst1DOWN || RangeOutsideVAstd1DOWN(RejetSt1DOWNNumberOfBars, RejetSt1DOWNMinimumPicTicks);
-			
-			return condition1 && condition2 && condition3 && condition4;
+			// Aucune barre n'a son High au-dessus de STD1 Lower
+			return false;
 		}
 		
 		
-		// ############################################## Use Setup IsRejetSt1DOWNPattern ################################################################# //
+		// ############################################## Use Setup 25.04 Use Pullback Simple DOWN ################################################################# //
+		
 		// ############################################## ShouldDrawUpArrow ################################################################# //
         private bool ShouldDrawUpArrow()
         {
@@ -1555,7 +1629,20 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				(!UseSetupU4BOCup || IsSetupU4BOCupPattern()) &&
 				(!UseSetupU4BHLup || IsSetupU4BHLupPattern()) &&
 				(!UseSetupALPHAUP || IsSetupALPHAUPPattern()) &&
-				(!UseRejetSt1UP || IsRejetSt1UPPattern()) &&
+				(!UseOutStd1UP || CheckBarsOutStd1UP()) &&
+				(!UsePullbackSimpleUP || CheckPullbackSimpleUP()) &&
+				(!UseDeltaVbarre0up || (currentBarDelta > MinDeltaValueUP)) &&
+				(!UseDeltaPercentBarre0up || (currentBarDeltaPercent > MinDeltaPercentUP)) &&
+				(!UseDeltaChangeBarre0up || (CurrentBar > 0 && currentBarDelta - previousBarDelta > MinDeltaChangeUP)) &&
+				(!UsePOCbarre0UP || (Close[0] >= pocPriceBarre0 + POCOffsetTicksUP * TickSize)) &&
+				(!UseDeltaVbarre1up || (CurrentBar > 0 && currentBar1Delta > MinDeltaValueUPB1)) &&
+				(!UseDeltaPercentBarre1up || (CurrentBar > 0 && currentBar1DeltaPercent > MinDeltaPercentUPB1)) &&
+				(!UseDeltaChangeBarre1up || (CurrentBar > 1 && currentBar1Delta - currentBar2Delta > MinDeltaChangeUPB1)) &&
+				(!UsePOCbarre1UP || (CurrentBar > 0 && Close[1] >= pocPriceBarre1 + POCOffsetTicksUPB1 * TickSize)) &&
+				(!UseDeltaVbarre2up || (CurrentBar > 1 && currentBar2Delta > MinDeltaValueUPB2)) &&
+				(!UseDeltaPercentBarre2up || (CurrentBar > 1 && currentBar2DeltaPercent > MinDeltaPercentUPB2)) &&
+				(!UseDeltaChangeBarre2up || (CurrentBar > 2 && currentBar2Delta - currentBar3Delta > MinDeltaChangeUPB2)) &&
+				(!UsePOCbarre2UP || (CurrentBar > 1 && Close[2] >= pocPriceBarre2 + POCOffsetTicksUPB2 * TickSize)) &&
 				(!EnableDistanceFromVWAPCondition || (distanceInTicks >= MinDistanceFromVWAP && distanceInTicks <= MaxDistanceFromVWAP));
 
             double openCloseDiff = Math.Abs(Open[0] - Close[0]) / TickSize;
@@ -1804,7 +1891,20 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				(!UseSetupU4BOCDown || IsSetupU4BOCDownPattern()) &&
 				(!UseSetupU4BHLDown || IsSetupU4BHLDownPattern()) &&
 				(!UseSetupALPHADOWN || IsSetupALPHADOWNPattern()) &&
-				(!UseRejetSt1DOWN || IsRejetSt1DOWNPattern()) &&
+				(!UseOutStd1DOWN || CheckBarsOutStd1DOWN()) &&
+				(!UsePullbackSimpleDOWN || CheckPullbackSimpleDOWN()) &&
+				(!UseDeltaVbarre0down || (currentBarDelta < MaxDeltaValueDOWN)) &&
+				(!UseDeltaPercentBarre0down || (currentBarDeltaPercent < MaxDeltaPercentDOWN)) &&
+				(!UseDeltaChangeBarre0down || (CurrentBar > 0 && currentBarDelta - previousBarDelta < MaxDeltaChangeDOWN)) &&
+				(!UsePOCbarre0Down || (Close[0] <= pocPriceBarre0 - POCOffsetTicksDOWN * TickSize)) &&
+				(!UseDeltaVbarre1down || (CurrentBar > 0 && currentBar1Delta < MaxDeltaValueDOWNB1)) &&
+				(!UseDeltaPercentBarre1down || (CurrentBar > 0 && currentBar1DeltaPercent < MaxDeltaPercentDOWNB1)) &&
+				(!UseDeltaChangeBarre1down || (CurrentBar > 1 && currentBar1Delta - currentBar2Delta < MaxDeltaChangeDOWNB1)) &&
+				(!UsePOCbarre1Down || (CurrentBar > 0 && Close[1] <= pocPriceBarre1 - POCOffsetTicksDOWNB1 * TickSize)) &&
+				(!UseDeltaVbarre2down || (CurrentBar > 1 && currentBar2Delta < MaxDeltaValueDOWNB2)) &&
+				(!UseDeltaPercentBarre2down || (CurrentBar > 1 && currentBar2DeltaPercent < MaxDeltaPercentDOWNB2)) &&
+				(!UseDeltaChangeBarre2down || (CurrentBar > 2 && currentBar2Delta - currentBar3Delta < MaxDeltaChangeDOWNB2)) &&
+				(!UsePOCbarre2Down || (CurrentBar > 1 && Close[2] <= pocPriceBarre2 - POCOffsetTicksDOWNB2 * TickSize)) &&
 				(!EnableDistanceFromVWAPCondition || (distanceInTicks >= MinDistanceFromVWAP && distanceInTicks <= MaxDistanceFromVWAP)); 
 
             double openCloseDiff = Math.Abs(Open[0] - Close[0]) / TickSize;
@@ -2925,44 +3025,315 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		public int Low3OffsetTicksDown { get; set; }
 		
 		// ############################ Setup UseSetupU4B ######################################### //
-		
-		// ############################ Setup RejetSt1 ######################################### //
+		// ############################ Setup 25.01 OutStd1UP ######################################### //
+		// Pour les signaux UP
 		[NinjaScriptProperty]
-		[Display(Name = "Use RejetSt1UP", Description = "Activer le pattern RejetSt1UP pour les signaux d'achat", Order = 1, GroupName = "25.01_Setup RejetSt1 UP")]
-		public bool UseRejetSt1UP { get; set; }
-		
-		[NinjaScriptProperty]
-		[Display(Name = "Use RangeOutsideVAst1UP", Description = "Utiliser la vérification de plage en dehors de VA STD1 pour UP", Order = 2, GroupName = "25.01_Setup RejetSt1 UP")]
-		public bool UseRangeOutsideVAst1UP { get; set; }
+		[Display(Name = "Use Out Std1 UP", Description = "Vérifier que les barres précédentes sont au-dessus de STD1 Upper", Order = 1, GroupName = "25.01 OutStd1UP")]
+		public bool UseOutStd1UP { get; set; }
 		
 		[NinjaScriptProperty]
-		[Range(3, 10)]
-		[Display(Name = "RejetSt1UP Number Of Bars", Description = "Nombre de barres à vérifier pour RangeOutsideVAstd1UP", Order = 3, GroupName = "25.01_Setup RejetSt1 UP")]
-		public int RejetSt1UPNumberOfBars { get; set; }
+		[Display(Name = "Use Open for Out Std1 UP", Description = "Vérifier que Open est au-dessus de STD1 Upper", Order = 2, GroupName = "25.01 OutStd1UP")]
+		public bool UseOpenForOutStd1UP { get; set; }
 		
 		[NinjaScriptProperty]
-		[Range(1, 100)]
-		[Display(Name = "RejetSt1UP Minimum Pic Ticks", Description = "Distance minimale en ticks pour le pic dans RangeOutsideVAstd1UP", Order = 4, GroupName = "25.01_Setup RejetSt1 UP")]
-		public int RejetSt1UPMinimumPicTicks { get; set; }
+		[Display(Name = "Use Close for Out Std1 UP", Description = "Vérifier que Close est au-dessus de STD1 Upper", Order = 3, GroupName = "25.01 OutStd1UP")]
+		public bool UseCloseForOutStd1UP { get; set; }
 		
 		[NinjaScriptProperty]
-		[Display(Name = "Use RejetSt1DOWN", Description = "Activer le pattern RejetSt1DOWN pour les signaux de vente", Order = 1, GroupName = "25.02_Setup RejetSt1 DOWN")]
-		public bool UseRejetSt1DOWN { get; set; }
+		[Range(1, 20)]
+		[Display(Name = "Min Bars Out Std1 UP", Description = "Nombre minimum de barres à vérifier", Order = 4, GroupName = "25.01 OutStd1UP")]
+		public int MinBarsOutStd1UP { get; set; }
 		
 		[NinjaScriptProperty]
-		[Display(Name = "Use RangeOutsideVAst1DOWN", Description = "Utiliser la vérification de plage en dehors de VA STD1 pour DOWN", Order = 2, GroupName = "25.02_Setup RejetSt1 DOWN")]
-		public bool UseRangeOutsideVAst1DOWN { get; set; }
+		[Range(1, 20)]
+		[Display(Name = "Max Bars Out Std1 UP", Description = "Nombre maximum de barres à vérifier", Order = 5, GroupName = "25.01 OutStd1UP")]
+		public int MaxBarsOutStd1UP { get; set; }
+		
+		// Pour les signaux DOWN
+		[NinjaScriptProperty]
+		[Display(Name = "Use Out Std1 DOWN", Description = "Vérifier que les barres précédentes sont en dessous de STD1 Lower", Order = 1, GroupName = "25.02 OutStd1DOWN")]
+		public bool UseOutStd1DOWN { get; set; }
 		
 		[NinjaScriptProperty]
-		[Range(3, 10)]
-		[Display(Name = "RejetSt1DOWN Number Of Bars", Description = "Nombre de barres à vérifier pour RangeOutsideVAstd1DOWN", Order = 3, GroupName = "25.02_Setup RejetSt1 DOWN")]
-		public int RejetSt1DOWNNumberOfBars { get; set; }
+		[Display(Name = "Use Open for Out Std1 DOWN", Description = "Vérifier que Open est en dessous de STD1 Lower", Order = 2, GroupName = "25.02 OutStd1DOWN")]
+		public bool UseOpenForOutStd1DOWN { get; set; }
 		
 		[NinjaScriptProperty]
-		[Range(1, 100)]
-		[Display(Name = "RejetSt1DOWN Minimum Pic Ticks", Description = "Distance minimale en ticks pour le pic dans RangeOutsideVAstd1DOWN", Order = 4, GroupName = "25.02_Setup RejetSt1 DOWN")]
-		public int RejetSt1DOWNMinimumPicTicks { get; set; }
-		// ############################ Setup RejetSt1 ######################################### //
+		[Display(Name = "Use Close for Out Std1 DOWN", Description = "Vérifier que Close est en dessous de STD1 Lower", Order = 3, GroupName = "25.02 OutStd1DOWN")]
+		public bool UseCloseForOutStd1DOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(1, 20)]
+		[Display(Name = "Min Bars Out Std1 DOWN", Description = "Nombre minimum de barres à vérifier", Order = 4, GroupName = "25.02 OutStd1DOWN")]
+		public int MinBarsOutStd1DOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(1, 20)]
+		[Display(Name = "Max Bars Out Std1 DOWN", Description = "Nombre maximum de barres à vérifier", Order = 5, GroupName = "25.02 OutStd1DOWN")]
+		public int MaxBarsOutStd1DOWN { get; set; }
+		// ############################ Setup 25.02 OutStd1DOWN ######################################### //
+		// ############################ Setup 25.03 UsePullbackSimpleUP ######################################### //
+		// Pour les signaux UP
+		[NinjaScriptProperty]
+		[Display(Name = "Use Pullback Simple UP", Description = "Vérifier qu'un pullback se produit sous STD1 Upper", Order = 1, GroupName = "25.03 Use Pullback Simple UP")]
+		public bool UsePullbackSimpleUP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 4)]
+		[Display(Name = "Min Bar Pullback UP", Description = "Index minimum des barres à vérifier pour le pullback", Order = 2, GroupName = "25.03 Use Pullback Simple UP")]
+		public int MinBarPullbackUP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 4)]
+		[Display(Name = "Max Bar Pullback UP", Description = "Index maximum des barres à vérifier pour le pullback", Order = 3, GroupName = "25.03 Use Pullback Simple UP")]
+		public int MaxBarPullbackUP { get; set; }
+		
+		// Pour les signaux DOWN
+		[NinjaScriptProperty]
+		[Display(Name = "Use Pullback Simple DOWN", Description = "Vérifier qu'un pullback se produit au-dessus de STD1 Lower", Order = 1, GroupName = "25.04 Use Pullback Simple DOWN")]
+		public bool UsePullbackSimpleDOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 4)]
+		[Display(Name = "Min Bar Pullback DOWN", Description = "Index minimum des barres à vérifier pour le pullback", Order = 2, GroupName = "25.04 Use Pullback Simple DOWN")]
+		public int MinBarPullbackDOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 4)]
+		[Display(Name = "Max Bar Pullback DOWN", Description = "Index maximum des barres à vérifier pour le pullback", Order = 3, GroupName = "25.04 Use Pullback Simple DOWN")]
+		public int MaxBarPullbackDOWN { get; set; }
+		
+		// ############################ Setup UseSetupU4B ######################################### //
+		
+		// ############################ Volumetrique Barre 0 30.01 ######################################### //
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta V Barre 0 UP", Description = "Activer la condition de delta positif pour les signaux UP", Order = 1, GroupName = "30.01 Volumetrique Barre 0")]
+		public bool UseDeltaVbarre0up { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Min Delta Value UP", Description = "Valeur minimum du delta pour les signaux UP", Order = 2, GroupName = "30.01 Volumetrique Barre 0")]
+		public int MinDeltaValueUP { get; set; }
+		
+		[NinjaScriptProperty]  
+		[Display(Name = "Use Delta Percent Barre 0 UP", Description = "Activer la condition de delta pourcentage pour les signaux UP", Order = 3, GroupName = "30.01 Volumetrique Barre 0")]
+		public bool UseDeltaPercentBarre0up { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Min Delta Percent UP", Description = "Valeur minimum du delta pourcentage pour les signaux UP", Order = 4, GroupName = "30.01 Volumetrique Barre 0")]
+		public double MinDeltaPercentUP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta Change Barre 0 UP", Description = "Activer la condition de changement de delta pour les signaux UP", Order = 5, GroupName = "30.01 Volumetrique Barre 0")]
+		public bool UseDeltaChangeBarre0up { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Min Delta Change UP", Description = "Valeur minimum du changement de delta pour les signaux UP", Order = 6, GroupName = "30.01 Volumetrique Barre 0")]
+		public double MinDeltaChangeUP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta V Barre 0 DOWN", Description = "Activer la condition de delta négatif pour les signaux DOWN", Order = 7, GroupName = "30.01 Volumetrique Barre 0")]
+		public bool UseDeltaVbarre0down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Max Delta Value DOWN", Description = "Valeur maximum (négative) du delta pour les signaux DOWN", Order = 8, GroupName = "30.01 Volumetrique Barre 0")]
+		public int MaxDeltaValueDOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta Percent Barre 0 DOWN", Description = "Activer la condition de delta pourcentage pour les signaux DOWN", Order = 9, GroupName = "30.01 Volumetrique Barre 0")]
+		public bool UseDeltaPercentBarre0down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Max Delta Percent DOWN", Description = "Valeur maximum (négative) du delta pourcentage pour les signaux DOWN", Order = 10, GroupName = "30.01 Volumetrique Barre 0")]
+		public double MaxDeltaPercentDOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta Change Barre 0 DOWN", Description = "Activer la condition de changement de delta pour les signaux DOWN", Order = 11, GroupName = "30.01 Volumetrique Barre 0")]
+		public bool UseDeltaChangeBarre0down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Max Delta Change DOWN", Description = "Valeur maximum (négative) du changement de delta pour les signaux DOWN", Order = 12, GroupName = "30.01 Volumetrique Barre 0")]
+		public double MaxDeltaChangeDOWN { get; set; }
+		
+		// POC properties for UP
+		[NinjaScriptProperty]
+		[Display(Name = "Use POC Barre 0 UP", Description = "Activer la condition de POC pour les signaux UP", Order = 13, GroupName = "30.01 Volumetrique Barre 0")]
+		public bool UsePOCbarre0UP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name = "POC Offset Ticks UP", Description = "Offset en ticks pour le POC UP", Order = 14, GroupName = "30.01 Volumetrique Barre 0")]
+		public int POCOffsetTicksUP { get; set; }
+		
+		// POC properties for DOWN
+		[NinjaScriptProperty]
+		[Display(Name = "Use POC Barre 0 DOWN", Description = "Activer la condition de POC pour les signaux DOWN", Order = 15, GroupName = "30.01 Volumetrique Barre 0")]
+		public bool UsePOCbarre0Down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name = "POC Offset Ticks DOWN", Description = "Offset en ticks pour le POC DOWN", Order = 16, GroupName = "30.01 Volumetrique Barre 0")]
+		public int POCOffsetTicksDOWN { get; set; }
+		
+		// Variables pour le volume delta
+		private double currentBarDelta;
+		private double previousBarDelta;
+		private double currentBarDeltaPercent;
+		private double pocPriceBarre0;
+		private long maxVolumePocBarre0;
+		// ############################ Volumetrique Barre 0 30.01 ######################################### //
+		// ############################ Volumetrique Barre 1 30.02 ######################################### //
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta V Barre 1 UP", Description = "Activer la condition de delta positif pour les signaux UP", Order = 1, GroupName = "30.02 Volumetrique Barre 1")]
+		public bool UseDeltaVbarre1up { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Min Delta Value UP B1", Description = "Valeur minimum du delta pour les signaux UP", Order = 2, GroupName = "30.02 Volumetrique Barre 1")]
+		public int MinDeltaValueUPB1 { get; set; }
+		
+		[NinjaScriptProperty]  
+		[Display(Name = "Use Delta Percent Barre 1 UP", Description = "Activer la condition de delta pourcentage pour les signaux UP", Order = 3, GroupName = "30.02 Volumetrique Barre 1")]
+		public bool UseDeltaPercentBarre1up { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Min Delta Percent UP B1", Description = "Valeur minimum du delta pourcentage pour les signaux UP", Order = 4, GroupName = "30.02 Volumetrique Barre 1")]
+		public double MinDeltaPercentUPB1 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta Change Barre 1 UP", Description = "Activer la condition de changement de delta pour les signaux UP", Order = 5, GroupName = "30.02 Volumetrique Barre 1")]
+		public bool UseDeltaChangeBarre1up { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Min Delta Change UP B1", Description = "Valeur minimum du changement de delta pour les signaux UP", Order = 6, GroupName = "30.02 Volumetrique Barre 1")]
+		public double MinDeltaChangeUPB1 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta V Barre 1 DOWN", Description = "Activer la condition de delta négatif pour les signaux DOWN", Order = 7, GroupName = "30.02 Volumetrique Barre 1")]
+		public bool UseDeltaVbarre1down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Max Delta Value DOWN B1", Description = "Valeur maximum (négative) du delta pour les signaux DOWN", Order = 8, GroupName = "30.02 Volumetrique Barre 1")]
+		public int MaxDeltaValueDOWNB1 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta Percent Barre 1 DOWN", Description = "Activer la condition de delta pourcentage pour les signaux DOWN", Order = 9, GroupName = "30.02 Volumetrique Barre 1")]
+		public bool UseDeltaPercentBarre1down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Max Delta Percent DOWN B1", Description = "Valeur maximum (négative) du delta pourcentage pour les signaux DOWN", Order = 10, GroupName = "30.02 Volumetrique Barre 1")]
+		public double MaxDeltaPercentDOWNB1 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta Change Barre 1 DOWN", Description = "Activer la condition de changement de delta pour les signaux DOWN", Order = 11, GroupName = "30.02 Volumetrique Barre 1")]
+		public bool UseDeltaChangeBarre1down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Max Delta Change DOWN B1", Description = "Valeur maximum (négative) du changement de delta pour les signaux DOWN", Order = 12, GroupName = "30.02 Volumetrique Barre 1")]
+		public double MaxDeltaChangeDOWNB1 { get; set; }
+		
+		// POC properties for UP
+		[NinjaScriptProperty]
+		[Display(Name = "Use POC Barre 1 UP", Description = "Activer la condition de POC pour les signaux UP", Order = 13, GroupName = "30.02 Volumetrique Barre 1")]
+		public bool UsePOCbarre1UP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name = "POC Offset Ticks UP B1", Description = "Offset en ticks pour le POC UP", Order = 14, GroupName = "30.02 Volumetrique Barre 1")]
+		public int POCOffsetTicksUPB1 { get; set; }
+		
+		// POC properties for DOWN
+		[NinjaScriptProperty]
+		[Display(Name = "Use POC Barre 1 DOWN", Description = "Activer la condition de POC pour les signaux DOWN", Order = 15, GroupName = "30.02 Volumetrique Barre 1")]
+		public bool UsePOCbarre1Down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name = "POC Offset Ticks DOWN B1", Description = "Offset en ticks pour le POC DOWN", Order = 16, GroupName = "30.02 Volumetrique Barre 1")]
+		public int POCOffsetTicksDOWNB1 { get; set; }
+		
+		// Variables pour la barre 1 (ajoutez ces lignes près des variables existantes)
+		private double currentBar1Delta;
+		private double currentBar1DeltaPercent;
+		private double pocPriceBarre1;
+		private long maxVolumePocBarre1;
+		// ############################ Volumetrique Barre 1 30.02 ######################################### //
+		// ############################ Volumetrique Barre 2 30.03 ######################################### //
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta V Barre 2 UP", Description = "Activer la condition de delta positif pour les signaux UP", Order = 1, GroupName = "30.03 Volumetrique Barre 2")]
+		public bool UseDeltaVbarre2up { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Min Delta Value UP B2", Description = "Valeur minimum du delta pour les signaux UP", Order = 2, GroupName = "30.03 Volumetrique Barre 2")]
+		public int MinDeltaValueUPB2 { get; set; }
+		
+		[NinjaScriptProperty]  
+		[Display(Name = "Use Delta Percent Barre 2 UP", Description = "Activer la condition de delta pourcentage pour les signaux UP", Order = 3, GroupName = "30.03 Volumetrique Barre 2")]
+		public bool UseDeltaPercentBarre2up { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Min Delta Percent UP B2", Description = "Valeur minimum du delta pourcentage pour les signaux UP", Order = 4, GroupName = "30.03 Volumetrique Barre 2")]
+		public double MinDeltaPercentUPB2 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta Change Barre 2 UP", Description = "Activer la condition de changement de delta pour les signaux UP", Order = 5, GroupName = "30.03 Volumetrique Barre 2")]
+		public bool UseDeltaChangeBarre2up { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Min Delta Change UP B2", Description = "Valeur minimum du changement de delta pour les signaux UP", Order = 6, GroupName = "30.03 Volumetrique Barre 2")]
+		public double MinDeltaChangeUPB2 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta V Barre 2 DOWN", Description = "Activer la condition de delta négatif pour les signaux DOWN", Order = 7, GroupName = "30.03 Volumetrique Barre 2")]
+		public bool UseDeltaVbarre2down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Max Delta Value DOWN B2", Description = "Valeur maximum (négative) du delta pour les signaux DOWN", Order = 8, GroupName = "30.03 Volumetrique Barre 2")]
+		public int MaxDeltaValueDOWNB2 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta Percent Barre 2 DOWN", Description = "Activer la condition de delta pourcentage pour les signaux DOWN", Order = 9, GroupName = "30.03 Volumetrique Barre 2")]
+		public bool UseDeltaPercentBarre2down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Max Delta Percent DOWN B2", Description = "Valeur maximum (négative) du delta pourcentage pour les signaux DOWN", Order = 10, GroupName = "30.03 Volumetrique Barre 2")]
+		public double MaxDeltaPercentDOWNB2 { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Use Delta Change Barre 2 DOWN", Description = "Activer la condition de changement de delta pour les signaux DOWN", Order = 11, GroupName = "30.03 Volumetrique Barre 2")]
+		public bool UseDeltaChangeBarre2down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name = "Max Delta Change DOWN B2", Description = "Valeur maximum (négative) du changement de delta pour les signaux DOWN", Order = 12, GroupName = "30.03 Volumetrique Barre 2")]
+		public double MaxDeltaChangeDOWNB2 { get; set; }
+		
+		// POC properties for UP
+		[NinjaScriptProperty]
+		[Display(Name = "Use POC Barre 2 UP", Description = "Activer la condition de POC pour les signaux UP", Order = 13, GroupName = "30.03 Volumetrique Barre 2")]
+		public bool UsePOCbarre2UP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name = "POC Offset Ticks UP B2", Description = "Offset en ticks pour le POC UP", Order = 14, GroupName = "30.03 Volumetrique Barre 2")]
+		public int POCOffsetTicksUPB2 { get; set; }
+		
+		// POC properties for DOWN
+		[NinjaScriptProperty]
+		[Display(Name = "Use POC Barre 2 DOWN", Description = "Activer la condition de POC pour les signaux DOWN", Order = 15, GroupName = "30.03 Volumetrique Barre 2")]
+		public bool UsePOCbarre2Down { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, int.MaxValue)]
+		[Display(Name = "POC Offset Ticks DOWN B2", Description = "Offset en ticks pour le POC DOWN", Order = 16, GroupName = "30.03 Volumetrique Barre 2")]
+		public int POCOffsetTicksDOWNB2 { get; set; }
+		
+		// Variables pour la barre 2 (ajoutez ces lignes près des variables existantes)
+		private double currentBar2Delta;
+		private double currentBar3Delta;
+		private double currentBar2DeltaPercent;
+		private double pocPriceBarre2;
+		private long maxVolumePocBarre2;
+		// ############################ Volumetrique Barre 2 30.03 ######################################### //
+
+		
         #endregion
     }
 }

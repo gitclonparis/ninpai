@@ -23,7 +23,7 @@ using NinjaTrader.NinjaScript.DrawingTools;
 
 namespace NinjaTrader.NinjaScript.Indicators.ninpai
 {
-    public class VabosV0005 : Indicator
+    public class VabosV0006 : Indicator
     {
 		
 		
@@ -82,7 +82,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             if (State == State.SetDefaults)
             {
                 Description = @"Indicateur BVA-Limusine combiné";
-                Name = "VabosV0005";
+                Name = "VabosV0006";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
@@ -305,17 +305,27 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				UseMinLow3 = false;
 				Low3OffsetTicksDown = 0;
 				
-				// Valeurs par défaut pour RejetSt1
-				UseRejetSt1UP = false;
-				UseRangeOutsideVAst1UP = false;
-				RejetSt1UPNumberOfBars = 3;
-				RejetSt1UPMinimumPicTicks = 10;
+				// Ajouter ces lignes dans la section State.SetDefaults
+				UseOutStd1UP = false;
+				UseOpenForOutStd1UP = true;
+				UseCloseForOutStd1UP = false;
+				MinBarsOutStd1UP = 3;
+				MaxBarsOutStd1UP = 6;
 				
-				UseRejetSt1DOWN = false;
-				UseRangeOutsideVAst1DOWN = false;
-				RejetSt1DOWNNumberOfBars = 3;
-				RejetSt1DOWNMinimumPicTicks = 10;
+				UseOutStd1DOWN = false;
+				UseOpenForOutStd1DOWN = true;
+				UseCloseForOutStd1DOWN = false;
+				MinBarsOutStd1DOWN = 3;
+				MaxBarsOutStd1DOWN = 6;
 				
+				// Ajouter ces lignes dans la section State.SetDefaults
+				UsePullbackSimpleUP = false;
+				MinBarPullbackUP = 0;
+				MaxBarPullbackUP = 2;
+				
+				UsePullbackSimpleDOWN = false;
+				MinBarPullbackDOWN = 0;
+				MaxBarPullbackDOWN = 2;
             }
             else if (State == State.Configure)
             {
@@ -327,9 +337,7 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
                 VOL1 = VOL(Close);
                 VOLMA1 = VOLMA(Close, Convert.ToInt32(FperiodVol));
 				sessionIterator = new SessionIterator(Bars);
-				
 				vwap = OrderFlowVWAP(VWAPResolution.Standard, Bars.TradingHours, VWAPStandardDeviations.Three, 1, 2, 3);
-				
             }
         }
 
@@ -390,11 +398,6 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
             Values[7][0] = vwap + 3 * stdDev;
             Values[8][0] = vwap - 3 * stdDev;
 			
-			// if (Volume[0] > volumeMaxS)
-			// {
-				// volumeMaxS = Volume[0];
-			// }
-            
             if (EnablePreviousSessionRangeBreakout)
             {
                 highestStd1Upper = Math.Max(highestStd1Upper, Values[3][0]);
@@ -1227,161 +1230,125 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		}
 		
 		// ############################################## Use Setup ALPHA ################################################################# //
-		// ############################################## RangeOutsideVAstd1UP ################################################################# //
-		// Méthode pour vérifier si les barres 3 à 5 sont toutes au-dessus du STD1 Upper avec un pic minimum
-		// private bool RangeOutsideVAstd1UP(int numberOfBars, double minimumPicTicks)
-		// {
-			// if (CurrentBar < numberOfBars)
-				// return false;
-		
-			// double std1Upper;
-			// double highestHigh = double.MinValue;
-			// bool allBarsAboveStd1 = true;
-			// for (int i = 3; i <= numberOfBars; i++)
-			// {
-				// std1Upper = Values[3][i];
-				// if (Open[i] <= std1Upper || Close[i] <= std1Upper)
-				// {
-					// allBarsAboveStd1 = false;
-					// break;
-				// }
-				// if (High[i] > highestHigh)
-				// {
-					// highestHigh = High[i];
-				// }
-			// }
-			// if (allBarsAboveStd1)
-			// {
-				// double std1UpperReference = Values[3][3]; // Utiliser STD1 Upper de la première barre comme référence
-				// double picDistanceInTicks = (highestHigh - std1UpperReference) / TickSize;
-				// return picDistanceInTicks >= minimumPicTicks;
-			// }
-			// return false;
-		// }
-		
-		private bool RangeOutsideVAstd1UP(int numberOfBars, double minimumPicTicks)
+		// ############################################## Use Setup 25.01 OutStd1UP ################################################################# //
+		private bool CheckBarsOutStd1UP()
 		{
-			if (CurrentBar < 5)  // Assurez-vous d'avoir au moins les barres 3, 4 et 5
-				return false;
-		
-			// Vérification que TOUS les Open et Close sont supérieurs à STD1 Upper
-			bool bar3Above = Open[3] > Values[3][3] && Close[3] > Values[3][3];
-			bool bar4Above = Open[4] > Values[3][4] && Close[4] > Values[3][4];
-			bool bar5Above = Open[5] > Values[3][5] && Close[5] > Values[3][5];
+			if (!UseOutStd1UP || !UseOpenForOutStd1UP && !UseCloseForOutStd1UP)
+				return true;
 			
-			// Toutes les barres doivent être au-dessus
-			bool allBarsAboveStd1 = bar3Above && bar4Above && bar5Above;
-			
-			if (!allBarsAboveStd1)
+			if (CurrentBar < MaxBarsOutStd1UP)
 				return false;
+			
+			int barsAboveStd1 = 0;
+			
+			for (int i = MinBarsOutStd1UP; i <= MaxBarsOutStd1UP; i++)
+			{
+				if (i > CurrentBar) continue;
 				
-			// Si toutes les barres sont au-dessus, vérifier la condition de pic
-			double highestHigh = Math.Max(High[3], Math.Max(High[4], High[5]));
-			double std1UpperReference = Values[3][3]; // Référence de la barre 3
-			double picDistanceInTicks = (highestHigh - std1UpperReference) / TickSize;
+				bool isBarAboveStd1 = false;
+				
+				// Vérifier les conditions Open et/ou Close
+				if (UseOpenForOutStd1UP && Open[i] > Values[3][i]) // Open au-dessus de STD1 Upper
+					isBarAboveStd1 = true;
+				
+				if (UseCloseForOutStd1UP && Close[i] > Values[3][i]) // Close au-dessus de STD1 Upper
+					isBarAboveStd1 = true;
+				
+				if ((UseOpenForOutStd1UP && UseCloseForOutStd1UP) && 
+					!(Open[i] > Values[3][i] && Close[i] > Values[3][i]))
+					isBarAboveStd1 = false; // Si les deux sont demandés, il faut que les deux soient au-dessus
+				
+				if (isBarAboveStd1)
+					barsAboveStd1++;
+			}
 			
-			return picDistanceInTicks >= minimumPicTicks;
+			// Vérifier que toutes les barres dans la plage sont au-dessus
+			return barsAboveStd1 == (MaxBarsOutStd1UP - MinBarsOutStd1UP + 1);
 		}
 		
-		// Méthode pour vérifier si les barres 3 à 5 sont toutes en-dessous du STD1 Lower avec un pic minimum
-		// private bool RangeOutsideVAstd1DOWN(int numberOfBars, double minimumPicTicks)
-		// {
-			// if (CurrentBar < numberOfBars)
-				// return false;
-			// double std1Lower;
-			// double lowestLow = double.MaxValue;
-			// bool allBarsBelowStd1 = true;
-			// for (int i = 3; i <= numberOfBars; i++)
-			// {
-				// std1Lower = Values[4][i];
-				// if (Open[i] >= std1Lower || Close[i] >= std1Lower)
-				// {
-					// allBarsBelowStd1 = false;
-					// break;
-				// }
-				// if (Low[i] < lowestLow)
-				// {
-					// lowestLow = Low[i];
-				// }
-			// }
-			// if (allBarsBelowStd1)
-			// {
-				// double std1LowerReference = Values[4][3]; // Utiliser STD1 Lower de la première barre comme référence
-				// double picDistanceInTicks = (std1LowerReference - lowestLow) / TickSize;
-				// return picDistanceInTicks >= minimumPicTicks;
-			// }
-			// return false;
-		// }
-		
-		private bool RangeOutsideVAstd1DOWN(int numberOfBars, double minimumPicTicks)
+		private bool CheckBarsOutStd1DOWN()
 		{
-			if (CurrentBar < 5)  // Assurez-vous d'avoir au moins les barres 3, 4 et 5
-				return false;
-		
-			bool bar3Below = Open[3] < Values[4][3] && Close[3] < Values[4][3];
-			bool bar4Below = Open[4] < Values[4][4] && Close[4] < Values[4][4];
-			bool bar5Below = Open[5] < Values[4][5] && Close[5] < Values[4][5];
-			bool allBarsBelowStd1 = bar3Below && bar4Below && bar5Below;
+			if (!UseOutStd1DOWN || !UseOpenForOutStd1DOWN && !UseCloseForOutStd1DOWN)
+				return true;
 			
-			if (!allBarsBelowStd1)
+			if (CurrentBar < MaxBarsOutStd1DOWN)
 				return false;
-			double lowestLow = Math.Min(Low[3], Math.Min(Low[4], Low[5]));
-			double std1LowerReference = Values[4][3]; // Référence de la barre 3
-			double picDistanceInTicks = (std1LowerReference - lowestLow) / TickSize;
 			
-			return picDistanceInTicks >= minimumPicTicks;
+			int barsBelowStd1 = 0;
+			
+			for (int i = MinBarsOutStd1DOWN; i <= MaxBarsOutStd1DOWN; i++)
+			{
+				if (i > CurrentBar) continue;
+				
+				bool isBarBelowStd1 = false;
+				
+				// Vérifier les conditions Open et/ou Close
+				if (UseOpenForOutStd1DOWN && Open[i] < Values[4][i]) // Open en dessous de STD1 Lower
+					isBarBelowStd1 = true;
+				
+				if (UseCloseForOutStd1DOWN && Close[i] < Values[4][i]) // Close en dessous de STD1 Lower
+					isBarBelowStd1 = true;
+				
+				if ((UseOpenForOutStd1DOWN && UseCloseForOutStd1DOWN) && 
+					!(Open[i] < Values[4][i] && Close[i] < Values[4][i]))
+					isBarBelowStd1 = false; // Si les deux sont demandés, il faut que les deux soient en dessous
+				
+				if (isBarBelowStd1)
+					barsBelowStd1++;
+			}
+			
+			// Vérifier que toutes les barres dans la plage sont en dessous
+			return barsBelowStd1 == (MaxBarsOutStd1DOWN - MinBarsOutStd1DOWN + 1);
 		}
 		
-		// ############################################## RangeOutsideVAstd1DOWN ################################################################# //
-		// ############################################## Use Setup IsRejetSt1UPPattern ################################################################# //
-		// Méthode pour vérifier le setup RejetSt1UP
-		private bool IsRejetSt1UPPattern()
+		
+		// ############################################## Use Setup 25.02 OutStd1DOWN ################################################################# //
+		// ############################################## Use Setup 25.03 Use Pullback Simple UP ################################################################# //
+		private bool CheckPullbackSimpleUP()
 		{
-			if (CurrentBar < 3)
+			if (!UsePullbackSimpleUP)
+				return true;
+			
+			// Vérifier que le range est valide
+			if (MinBarPullbackUP > MaxBarPullbackUP || CurrentBar < MaxBarPullbackUP)
 				return false;
 			
-			double std1Upper = Values[3][2]; // STD1 Upper pour la barre 2
+			// Vérifier si au moins une des barres dans le range a son extrémité inférieure à STD1 Upper
+			for (int i = MinBarPullbackUP; i <= MaxBarPullbackUP; i++)
+			{
+				// Pour UP, on cherche si le Low de la barre est inférieur à STD1 Upper
+				if (Low[i] < Values[3][i])
+					return true; // On a trouvé au moins une barre avec son Low sous STD1 Upper
+			}
 			
-			// Conditions à vérifier
-			bool condition1 = Open[2] > std1Upper; // Open2 supérieur à STD1 Upper
-			
-			// Une des Low des trois barres 0,1,2 doit être inférieure à STD1 Upper
-			bool condition2 = Low[0] < std1Upper || Low[1] < std1Upper || Low[2] < std1Upper;
-			
-			// Close0 doit être supérieur à Open2
-			bool condition3 = Close[0] > Open[2];
-			
-			// Vérifier la condition RangeOutsideVAstd1UP si activée
-			bool condition4 = !UseRangeOutsideVAst1UP || RangeOutsideVAstd1UP(RejetSt1UPNumberOfBars, RejetSt1UPMinimumPicTicks);
-			
-			return condition1 && condition2 && condition3 && condition4;
+			// Aucune barre n'a son Low sous STD1 Upper
+			return false;
 		}
 		
-		// Méthode pour vérifier le setup RejetSt1DOWN
-		private bool IsRejetSt1DOWNPattern()
+		private bool CheckPullbackSimpleDOWN()
 		{
-			if (CurrentBar < 3)
+			if (!UsePullbackSimpleDOWN)
+				return true;
+			
+			// Vérifier que le range est valide
+			if (MinBarPullbackDOWN > MaxBarPullbackDOWN || CurrentBar < MaxBarPullbackDOWN)
 				return false;
 			
-			double std1Lower = Values[4][2]; // STD1 Lower pour la barre 2
+			// Vérifier si au moins une des barres dans le range a son extrémité supérieure à STD1 Lower
+			for (int i = MinBarPullbackDOWN; i <= MaxBarPullbackDOWN; i++)
+			{
+				// Pour DOWN, on cherche si le High de la barre est supérieur à STD1 Lower
+				if (High[i] > Values[4][i])
+					return true; // On a trouvé au moins une barre avec son High au-dessus de STD1 Lower
+			}
 			
-			// Conditions à vérifier
-			bool condition1 = Open[2] < std1Lower; // Open2 inférieur à STD1 Lower
-			
-			// Une des High des trois barres 0,1,2 doit être supérieure à STD1 Lower
-			bool condition2 = High[0] > std1Lower || High[1] > std1Lower || High[2] > std1Lower;
-			
-			// Close0 doit être inférieur à Open2
-			bool condition3 = Close[0] < Open[2];
-			
-			// Vérifier la condition RangeOutsideVAstd1DOWN si activée
-			bool condition4 = !UseRangeOutsideVAst1DOWN || RangeOutsideVAstd1DOWN(RejetSt1DOWNNumberOfBars, RejetSt1DOWNMinimumPicTicks);
-			
-			return condition1 && condition2 && condition3 && condition4;
+			// Aucune barre n'a son High au-dessus de STD1 Lower
+			return false;
 		}
 		
 		
-		// ############################################## Use Setup IsRejetSt1DOWNPattern ################################################################# //
+		// ############################################## Use Setup 25.04 Use Pullback Simple DOWN ################################################################# //
+		
 		// ############################################## ShouldDrawUpArrow ################################################################# //
         private bool ShouldDrawUpArrow()
         {
@@ -1555,7 +1522,8 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				(!UseSetupU4BOCup || IsSetupU4BOCupPattern()) &&
 				(!UseSetupU4BHLup || IsSetupU4BHLupPattern()) &&
 				(!UseSetupALPHAUP || IsSetupALPHAUPPattern()) &&
-				(!UseRejetSt1UP || IsRejetSt1UPPattern()) &&
+				(!UseOutStd1UP || CheckBarsOutStd1UP()) &&
+				(!UsePullbackSimpleUP || CheckPullbackSimpleUP()) &&
 				(!EnableDistanceFromVWAPCondition || (distanceInTicks >= MinDistanceFromVWAP && distanceInTicks <= MaxDistanceFromVWAP));
 
             double openCloseDiff = Math.Abs(Open[0] - Close[0]) / TickSize;
@@ -1804,7 +1772,8 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 				(!UseSetupU4BOCDown || IsSetupU4BOCDownPattern()) &&
 				(!UseSetupU4BHLDown || IsSetupU4BHLDownPattern()) &&
 				(!UseSetupALPHADOWN || IsSetupALPHADOWNPattern()) &&
-				(!UseRejetSt1DOWN || IsRejetSt1DOWNPattern()) &&
+				(!UseOutStd1DOWN || CheckBarsOutStd1DOWN()) &&
+				(!UsePullbackSimpleDOWN || CheckPullbackSimpleDOWN()) &&
 				(!EnableDistanceFromVWAPCondition || (distanceInTicks >= MinDistanceFromVWAP && distanceInTicks <= MaxDistanceFromVWAP)); 
 
             double openCloseDiff = Math.Abs(Open[0] - Close[0]) / TickSize;
@@ -2925,44 +2894,85 @@ namespace NinjaTrader.NinjaScript.Indicators.ninpai
 		public int Low3OffsetTicksDown { get; set; }
 		
 		// ############################ Setup UseSetupU4B ######################################### //
-		
-		// ############################ Setup RejetSt1 ######################################### //
+		// ############################ Setup 25.01 OutStd1UP ######################################### //
+		// Pour les signaux UP
 		[NinjaScriptProperty]
-		[Display(Name = "Use RejetSt1UP", Description = "Activer le pattern RejetSt1UP pour les signaux d'achat", Order = 1, GroupName = "25.01_Setup RejetSt1 UP")]
-		public bool UseRejetSt1UP { get; set; }
-		
-		[NinjaScriptProperty]
-		[Display(Name = "Use RangeOutsideVAst1UP", Description = "Utiliser la vérification de plage en dehors de VA STD1 pour UP", Order = 2, GroupName = "25.01_Setup RejetSt1 UP")]
-		public bool UseRangeOutsideVAst1UP { get; set; }
+		[Display(Name = "Use Out Std1 UP", Description = "Vérifier que les barres précédentes sont au-dessus de STD1 Upper", Order = 1, GroupName = "25.01 OutStd1UP")]
+		public bool UseOutStd1UP { get; set; }
 		
 		[NinjaScriptProperty]
-		[Range(3, 10)]
-		[Display(Name = "RejetSt1UP Number Of Bars", Description = "Nombre de barres à vérifier pour RangeOutsideVAstd1UP", Order = 3, GroupName = "25.01_Setup RejetSt1 UP")]
-		public int RejetSt1UPNumberOfBars { get; set; }
+		[Display(Name = "Use Open for Out Std1 UP", Description = "Vérifier que Open est au-dessus de STD1 Upper", Order = 2, GroupName = "25.01 OutStd1UP")]
+		public bool UseOpenForOutStd1UP { get; set; }
 		
 		[NinjaScriptProperty]
-		[Range(1, 100)]
-		[Display(Name = "RejetSt1UP Minimum Pic Ticks", Description = "Distance minimale en ticks pour le pic dans RangeOutsideVAstd1UP", Order = 4, GroupName = "25.01_Setup RejetSt1 UP")]
-		public int RejetSt1UPMinimumPicTicks { get; set; }
+		[Display(Name = "Use Close for Out Std1 UP", Description = "Vérifier que Close est au-dessus de STD1 Upper", Order = 3, GroupName = "25.01 OutStd1UP")]
+		public bool UseCloseForOutStd1UP { get; set; }
 		
 		[NinjaScriptProperty]
-		[Display(Name = "Use RejetSt1DOWN", Description = "Activer le pattern RejetSt1DOWN pour les signaux de vente", Order = 1, GroupName = "25.02_Setup RejetSt1 DOWN")]
-		public bool UseRejetSt1DOWN { get; set; }
+		[Range(1, 20)]
+		[Display(Name = "Min Bars Out Std1 UP", Description = "Nombre minimum de barres à vérifier", Order = 4, GroupName = "25.01 OutStd1UP")]
+		public int MinBarsOutStd1UP { get; set; }
 		
 		[NinjaScriptProperty]
-		[Display(Name = "Use RangeOutsideVAst1DOWN", Description = "Utiliser la vérification de plage en dehors de VA STD1 pour DOWN", Order = 2, GroupName = "25.02_Setup RejetSt1 DOWN")]
-		public bool UseRangeOutsideVAst1DOWN { get; set; }
+		[Range(1, 20)]
+		[Display(Name = "Max Bars Out Std1 UP", Description = "Nombre maximum de barres à vérifier", Order = 5, GroupName = "25.01 OutStd1UP")]
+		public int MaxBarsOutStd1UP { get; set; }
+		
+		// Pour les signaux DOWN
+		[NinjaScriptProperty]
+		[Display(Name = "Use Out Std1 DOWN", Description = "Vérifier que les barres précédentes sont en dessous de STD1 Lower", Order = 1, GroupName = "25.02 OutStd1DOWN")]
+		public bool UseOutStd1DOWN { get; set; }
 		
 		[NinjaScriptProperty]
-		[Range(3, 10)]
-		[Display(Name = "RejetSt1DOWN Number Of Bars", Description = "Nombre de barres à vérifier pour RangeOutsideVAstd1DOWN", Order = 3, GroupName = "25.02_Setup RejetSt1 DOWN")]
-		public int RejetSt1DOWNNumberOfBars { get; set; }
+		[Display(Name = "Use Open for Out Std1 DOWN", Description = "Vérifier que Open est en dessous de STD1 Lower", Order = 2, GroupName = "25.02 OutStd1DOWN")]
+		public bool UseOpenForOutStd1DOWN { get; set; }
 		
 		[NinjaScriptProperty]
-		[Range(1, 100)]
-		[Display(Name = "RejetSt1DOWN Minimum Pic Ticks", Description = "Distance minimale en ticks pour le pic dans RangeOutsideVAstd1DOWN", Order = 4, GroupName = "25.02_Setup RejetSt1 DOWN")]
-		public int RejetSt1DOWNMinimumPicTicks { get; set; }
-		// ############################ Setup RejetSt1 ######################################### //
+		[Display(Name = "Use Close for Out Std1 DOWN", Description = "Vérifier que Close est en dessous de STD1 Lower", Order = 3, GroupName = "25.02 OutStd1DOWN")]
+		public bool UseCloseForOutStd1DOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(1, 20)]
+		[Display(Name = "Min Bars Out Std1 DOWN", Description = "Nombre minimum de barres à vérifier", Order = 4, GroupName = "25.02 OutStd1DOWN")]
+		public int MinBarsOutStd1DOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(1, 20)]
+		[Display(Name = "Max Bars Out Std1 DOWN", Description = "Nombre maximum de barres à vérifier", Order = 5, GroupName = "25.02 OutStd1DOWN")]
+		public int MaxBarsOutStd1DOWN { get; set; }
+		// ############################ Setup 25.02 OutStd1DOWN ######################################### //
+		// ############################ Setup 25.03 UsePullbackSimpleUP ######################################### //
+		// Pour les signaux UP
+		[NinjaScriptProperty]
+		[Display(Name = "Use Pullback Simple UP", Description = "Vérifier qu'un pullback se produit sous STD1 Upper", Order = 1, GroupName = "25.03 Use Pullback Simple UP")]
+		public bool UsePullbackSimpleUP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 4)]
+		[Display(Name = "Min Bar Pullback UP", Description = "Index minimum des barres à vérifier pour le pullback", Order = 2, GroupName = "25.03 Use Pullback Simple UP")]
+		public int MinBarPullbackUP { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 4)]
+		[Display(Name = "Max Bar Pullback UP", Description = "Index maximum des barres à vérifier pour le pullback", Order = 3, GroupName = "25.03 Use Pullback Simple UP")]
+		public int MaxBarPullbackUP { get; set; }
+		
+		// Pour les signaux DOWN
+		[NinjaScriptProperty]
+		[Display(Name = "Use Pullback Simple DOWN", Description = "Vérifier qu'un pullback se produit au-dessus de STD1 Lower", Order = 1, GroupName = "25.04 Use Pullback Simple DOWN")]
+		public bool UsePullbackSimpleDOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 4)]
+		[Display(Name = "Min Bar Pullback DOWN", Description = "Index minimum des barres à vérifier pour le pullback", Order = 2, GroupName = "25.04 Use Pullback Simple DOWN")]
+		public int MinBarPullbackDOWN { get; set; }
+		
+		[NinjaScriptProperty]
+		[Range(0, 4)]
+		[Display(Name = "Max Bar Pullback DOWN", Description = "Index maximum des barres à vérifier pour le pullback", Order = 3, GroupName = "25.04 Use Pullback Simple DOWN")]
+		public int MaxBarPullbackDOWN { get; set; }
+		
+		// ############################ Setup UseSetupU4B ######################################### //
         #endregion
     }
 }
