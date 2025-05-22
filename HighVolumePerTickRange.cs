@@ -1,10 +1,23 @@
 #region Using declarations
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Xml.Serialization;
+using NinjaTrader.Cbi;
+using NinjaTrader.Gui;
+using NinjaTrader.Gui.Chart;
+using NinjaTrader.Gui.SuperDom;
+using NinjaTrader.Gui.Tools;
 using NinjaTrader.Data;
 using NinjaTrader.NinjaScript;
+using NinjaTrader.Core.FloatingPoint;
 using NinjaTrader.NinjaScript.DrawingTools;
 #endregion
 
@@ -50,7 +63,9 @@ namespace NinjaTrader.NinjaScript.Indicators
                 if (volumeRatio >= VolumePerTickThreshold)
                 {
                     isHigh = true;
-                    Draw.Ellipse(this, "HighVol" + CurrentBar, false, 0, High[0], 0, High[0] + TickSize, Brushes.Red);
+                    // Draw.Ellipse(this, "HighVol" + CurrentBar, false, 0, High[0], 0, High[0] + TickSize, Brushes.Red);
+					// Draw.Ellipse(this, "HighVol" + CurrentBar, 0, High[0] + TickSize, 0, High[0], Brushes.Red, 50);
+					Draw.Dot(this, "HighVol" + CurrentBar, false, 0, High[0] + TickSize, Brushes.Red);
                 }
             }
             highVolumeBars[0] = isHigh;
@@ -75,58 +90,3 @@ namespace NinjaTrader.NinjaScript.Indicators
         #endregion
     }
 }
-
-#region NinjaScript generated code. Neither change nor remove.
-namespace NinjaTrader.NinjaScript.Indicators
-{
-    public partial class Indicator
-    {
-        private HighVolumePerTickRange[] cacheHighVolumePerTickRange;
-        public HighVolumePerTickRange HighVolumePerTickRange(double volumePerTickThreshold)
-        {
-            return HighVolumePerTickRange(Input, volumePerTickThreshold);
-        }
-
-        public HighVolumePerTickRange HighVolumePerTickRange(ISeries<double> input, double volumePerTickThreshold)
-        {
-            if (cacheHighVolumePerTickRange != null)
-                for (int idx = 0; idx < cacheHighVolumePerTickRange.Length; idx++)
-                    if (cacheHighVolumePerTickRange[idx] != null && cacheHighVolumePerTickRange[idx].VolumePerTickThreshold == volumePerTickThreshold && cacheHighVolumePerTickRange[idx].EqualsInput(input))
-                        return cacheHighVolumePerTickRange[idx];
-            return CacheIndicator<HighVolumePerTickRange>(new HighVolumePerTickRange(){ VolumePerTickThreshold = volumePerTickThreshold }, input, ref cacheHighVolumePerTickRange);
-        }
-    }
-}
-
-namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
-{
-    public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
-    {
-        public Indicators.HighVolumePerTickRange HighVolumePerTickRange(double volumePerTickThreshold)
-        {
-            return indicator.HighVolumePerTickRange(Input, volumePerTickThreshold);
-        }
-
-        public Indicators.HighVolumePerTickRange HighVolumePerTickRange(ISeries<double> input, double volumePerTickThreshold)
-        {
-            return indicator.HighVolumePerTickRange(input, volumePerTickThreshold);
-        }
-    }
-}
-
-namespace NinjaTrader.NinjaScript.Strategies
-{
-    public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
-    {
-        public Indicators.HighVolumePerTickRange HighVolumePerTickRange(double volumePerTickThreshold)
-        {
-            return indicator.HighVolumePerTickRange(Input, volumePerTickThreshold);
-        }
-
-        public Indicators.HighVolumePerTickRange HighVolumePerTickRange(ISeries<double> input, double volumePerTickThreshold)
-        {
-            return indicator.HighVolumePerTickRange(input, volumePerTickThreshold);
-        }
-    }
-}
-#endregion
